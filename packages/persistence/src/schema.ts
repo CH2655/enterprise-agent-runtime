@@ -41,6 +41,18 @@ export const idempotencyStatus = pgEnum("idempotency_status", [
   "failed",
 ]);
 
+export const knowledgeDocumentStatus = pgEnum("knowledge_document_status", [
+  "active",
+  "archived",
+]);
+
+export const knowledgeOutboxStatus = pgEnum("knowledge_outbox_status", [
+  "pending",
+  "processing",
+  "failed",
+  "completed",
+]);
+
 export const agentRuns = pgTable(
   "agent_runs",
   {
@@ -230,6 +242,94 @@ export const idempotencyRecords = pgTable(
   ],
 );
 
+export const knowledgeDocuments = pgTable(
+  "knowledge_documents",
+  {
+    id: uuid("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    documentKey: text("document_key").notNull(),
+    version: integer("version").notNull(),
+    title: text("title").notNull(),
+    contentHash: text("content_hash").notNull(),
+    status: knowledgeDocumentStatus("status").notNull().default("active"),
+    permissionTags: jsonb("permission_tags").$type<string[]>().notNull().default([]),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+    indexedAt: timestamp("indexed_at", { withTimezone: true, mode: "string" }),
+  },
+  (table) => [
+    uniqueIndex("knowledge_documents_tenant_key_version_unique").on(
+      table.tenantId,
+      table.documentKey,
+      table.version,
+    ),
+    uniqueIndex("knowledge_documents_tenant_key_active_unique")
+      .on(table.tenantId, table.documentKey)
+      .where(sql`${table.status} = 'active'`),
+    index("knowledge_documents_tenant_key_status_idx").on(
+      table.tenantId,
+      table.documentKey,
+      table.status,
+    ),
+  ],
+);
+
+export const knowledgeChunks = pgTable(
+  "knowledge_chunks",
+  {
+    id: uuid("id").primaryKey(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => knowledgeDocuments.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id").notNull(),
+    documentKey: text("document_key").notNull(),
+    documentVersion: integer("document_version").notNull(),
+    ordinal: integer("ordinal").notNull(),
+    section: text("section").notNull(),
+    startLine: integer("start_line").notNull(),
+    endLine: integer("end_line").notNull(),
+    content: text("content").notNull(),
+    contentHash: text("content_hash").notNull(),
+    permissionTags: jsonb("permission_tags").$type<string[]>().notNull().default([]),
+  },
+  (table) => [
+    uniqueIndex("knowledge_chunks_document_ordinal_unique").on(
+      table.documentId,
+      table.ordinal,
+    ),
+    index("knowledge_chunks_tenant_document_idx").on(table.tenantId, table.documentId),
+  ],
+);
+
+export const knowledgeOutbox = pgTable(
+  "knowledge_outbox",
+  {
+    id: uuid("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => knowledgeDocuments.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull().default("knowledge.document.index"),
+    status: knowledgeOutboxStatus("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    availableAt: timestamp("available_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true, mode: "string" }),
+    completedAt: timestamp("completed_at", { withTimezone: true, mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("knowledge_outbox_status_available_idx").on(table.status, table.availableAt),
+    index("knowledge_outbox_tenant_document_idx").on(table.tenantId, table.documentId),
+  ],
+);
+
 export const runtimeSchema = {
   agentRuns,
   agentEvents,
@@ -239,6 +339,9 @@ export const runtimeSchema = {
   riskFindings,
   toolInvocations,
   idempotencyRecords,
+  knowledgeDocuments,
+  knowledgeChunks,
+  knowledgeOutbox,
 };
 
 export const touchUpdatedAt = sql`now()`;

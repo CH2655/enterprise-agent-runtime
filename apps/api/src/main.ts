@@ -1,6 +1,11 @@
 import { createApp } from "./app.js";
 import { createPostgresInfrastructure } from "./infrastructure.js";
-import { OpenAIResponsesModelProvider } from "@ear/model-provider";
+import {
+  DeterministicEmbeddingProvider,
+  OpenAIEmbeddingProvider,
+  OpenAIResponsesModelProvider,
+} from "@ear/model-provider";
+import { QdrantVectorIndex } from "@ear/retrieval";
 
 const authMode = process.env.AUTH_MODE ?? "demo";
 const auth = authMode === "jwt"
@@ -22,7 +27,31 @@ const modelProvider = process.env.OPENAI_API_KEY
       ...(process.env.OPENAI_BASE_URL ? { baseUrl: process.env.OPENAI_BASE_URL } : {}),
     })
   : undefined;
-const { app } = createApp({ auth, infrastructure, modelProvider });
+const embeddingDimensions = Number(process.env.EMBEDDING_DIMENSIONS ?? 256);
+const embeddingProvider = process.env.OPENAI_API_KEY
+  ? new OpenAIEmbeddingProvider({
+      apiKey: process.env.OPENAI_API_KEY,
+      model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
+      dimensions: embeddingDimensions,
+      ...(process.env.OPENAI_BASE_URL ? { baseUrl: process.env.OPENAI_BASE_URL } : {}),
+    })
+  : new DeterministicEmbeddingProvider(embeddingDimensions);
+const vectorIndex = process.env.QDRANT_URL
+  ? new QdrantVectorIndex({
+      url: process.env.QDRANT_URL,
+      collection: process.env.QDRANT_COLLECTION ?? "knowledge_chunks",
+      ...(process.env.QDRANT_API_KEY ? { apiKey: process.env.QDRANT_API_KEY } : {}),
+    })
+  : undefined;
+const { app } = createApp({
+  auth,
+  infrastructure,
+  modelProvider,
+  embeddingProvider,
+  vectorIndex,
+  useKnowledgeSearchTool: true,
+  knowledgeIndexIntervalMs: Number(process.env.KNOWLEDGE_INDEX_INTERVAL_MS ?? 2_000),
+});
 const port = Number(process.env.PORT ?? 3001);
 
 await app.listen({ host: "127.0.0.1", port });

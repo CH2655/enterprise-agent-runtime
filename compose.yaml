@@ -15,5 +15,13 @@ services:
     volumes:
       - ear_postgres_data:/var/lib/postgresql/data
 
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    ports:
+      - "6333:6333"
+    volumes:
+      - ear_qdrant_data:/qdrant/storage
+
 volumes:
   ear_postgres_data:
+  ear_qdrant_data:

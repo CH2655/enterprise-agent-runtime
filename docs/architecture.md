@@ -146,7 +146,7 @@ POST /api/runs
   -> AgentRuntime.start
   -> Risk Agent 通过 Model Provider 生成结构化只读取证计划
   -> 控制面校验白名单、缺失维度、重复工具和轮次预算
-  -> Tool Registry 执行本轮 Mock 只读工具
+  -> Tool Registry 执行本轮受控只读工具
   -> evaluate 计算缺失维度，最多 replan 三轮
   -> 生成五条 Evidence 与两条 Finding
   -> waiting_approval
@@ -161,7 +161,7 @@ POST /api/runs/:id/approve
 
 故障注入覆盖“写工具和 checkpoint 已完成，但 Run 状态保存失败”的窗口。恢复逻辑先读取最终 checkpoint：图已结束则只校准 Run；图仍暂停才恢复执行。稳定幂等键会传递给工具适配器，因此不会产生第二条整改任务。
 
-Model Provider 提供确定性测试实现和 OpenAI Responses API Structured Outputs 实现。模型只负责计划与候选 Finding；工具参数、路由、预算、权限、引用校验和副作用仍由确定性代码控制。当前尚未用真实案件建立模型质量基线，也未实现知识检索或生产规模验证。
+Model Provider 提供确定性测试实现和 OpenAI Responses API Structured Outputs 实现。模型只负责计划与候选 Finding；工具参数、路由、预算、权限、引用校验和副作用仍由确定性代码控制。知识检索后端已实现文档版本、Outbox、Embedding 与 Qdrant 适配，当前尚未用真实案件建立模型/检索质量基线，也未做生产规模验证。
 
 ## 7. 可靠性语义
 
@@ -190,7 +190,7 @@ writeback.completed
 ## 9. 演进顺序
 
 1. M1 已完成 PostgreSQL、JWT、持久化 checkpoint、事件和幂等核心链路，继续收口状态审计和对象权限。
-2. M2 接入动态 Loop、真实模型、Qdrant 和 Web 工作台。
+2. M2 完成动态 Loop、Model Provider、RAG 后端和 Web 工作台。
 3. M3 最后实现 PaaS 元数据工具、MCP、RN SDK 和 Contract Agent。
 
 具体交付物和退出门槛见[实施里程碑](milestones.md)与[验收标准](acceptance-criteria.md)。

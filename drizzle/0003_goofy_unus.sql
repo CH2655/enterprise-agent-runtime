@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "knowledge_documents_tenant_key_active_unique" ON "knowledge_documents" USING btree ("tenant_id","document_key") WHERE "knowledge_documents"."status" = 'active';

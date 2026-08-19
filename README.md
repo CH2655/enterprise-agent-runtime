@@ -2,7 +2,7 @@
 
 面向企业 PaaS 的多租户 Agent 执行与治理项目，以“项目风控与供应商准入尽调”为首个标杆业务，目标是让 AI 能够受控读取企业数据、生成可追溯结论、等待人工审批并安全回写业务系统。
 
-> 当前仓库已完成 M1 可靠 Runtime 的核心实现：PostgreSQL 持久化、JWT 身份、LangGraph checkpoint、人工审批、事件回放和写工具幂等均已接入并通过真实数据库集成测试。真实模型、Qdrant、Web、MCP、RN SDK 和第二 Agent 属于后续里程碑，尚不能作为已实现能力表述。
+> 当前仓库已完成 M1 可靠 Runtime，并完成 M2 的动态 Agent 与知识检索后端：PostgreSQL 持久化、JWT 身份、LangGraph checkpoint、受约束动态规划、文档版本、Outbox、Embedding、Qdrant 适配和可定位 Evidence 已实现。Web、MCP、RN SDK、第二 Agent 及真实模型质量评测仍属于后续工作。
 
 ## 产品闭环
 
@@ -38,7 +38,13 @@
 - 受约束动态 Loop：`plan -> collect -> evaluate -> replan`，只允许只读工具、最多三轮、成功工具不重复。
 - 模型生成候选 Finding，确定性代码继续负责工具白名单、参数构造、Evidence 引用校验和写操作审批。
 - 未配置模型 Key 时使用离线确定性 Provider，完整流程可重复测试。
-- 7 个测试文件、29 个测试；覆盖重启恢复、审批并发、崩溃窗口、动态补取、非法计划、有界终止和结构化模型输出。
+- Markdown 文档入库、章节分块、内容哈希、活动版本切换和权限标签。
+- PostgreSQL 事务内同时提交文档、Chunk 与 Outbox；Qdrant 暂时失败时任务保留并可重试，崩溃后的陈旧锁可回收。
+- 确定性 Embedding 与 OpenAI Embeddings Provider；本地测试无需外部 API。
+- Qdrant REST 适配器：集合维度校验、`tenant_id` 租户索引、租户过滤、文档版本替换与向量查询。
+- Risk Agent 的制度工具接入真实 Knowledge Search，Evidence 保存文档 ID、版本、Chunk、章节和行号 locator。
+- 检索 API 按可信身份注入租户，并在 PostgreSQL 活动版本校验后执行权限标签过滤。
+- 自动化测试覆盖重启恢复、审批并发、崩溃窗口、动态补取、非法计划、有界终止、跨租户检索、版本切换、Outbox 重试和 Evidence 定位。
 
 ## 当前限制
 
@@ -49,7 +55,10 @@
 - 对象权限接口与规则适配器已经实现，真实 PaaS 权限服务客户端尚未接入。
 - “最多一次业务副作用”依赖稳定幂等键和下游适配器遵守该键，不宣称分布式 exactly-once。
 - OpenAI Provider 已实现但未使用真实 Key 建立质量/延迟/成本基线；默认仍运行确定性 Provider。
-- 业务工具和制度检索仍为 Mock，没有 Qdrant、文档解析、Embedding 和真实 RAG。
+- 项目、供应商、企业风险、流水和整改写回仍为 Mock；制度检索已经接入知识库。
+- 文档解析当前支持 Markdown 章节和行号，不包含 PDF/OCR。
+- Qdrant 适配器有协议级自动化测试；尚未建立真实 Qdrant 容器的持续集成和检索质量基线。
+- OpenAI Model/Embedding Provider 已实现，但未使用真实 Key 建立质量、延迟和成本基线。
 - 只有 Risk Agent，没有 Web/RN 客户端和第二业务 Agent。
 
 ## 架构原则
@@ -100,11 +109,12 @@ packages/agent-protocol/   事件、sequence、补发和订阅
 packages/auth/             JWT Claims 到可信 IdentityContext
 packages/persistence/      Drizzle Schema、PostgreSQL Repository 和审计
 packages/model-provider/   结构化模型契约、离线实现和 OpenAI Provider
+packages/retrieval/        文档分块、Embedding 编排、Outbox Worker 与 Qdrant 适配
 __tests__/                 工作流与平台包测试
 docs/                      PRD、架构、ADR、里程碑与验收
 ```
 
-目标结构会在对应里程碑实施时增加 `apps/web`、`packages/retrieval`、`packages/model-provider`、`packages/rn-agent-sdk` 和 `mcp-servers/paas-tools`。
+目标结构会在对应里程碑实施时增加 `apps/web`、`packages/rn-agent-sdk` 和 `mcp-servers/paas-tools`。
 
 ## 本地运行
 
@@ -118,7 +128,7 @@ pnpm dev
 
 API 默认运行在 `http://127.0.0.1:3001`。
 
-M1 PostgreSQL 本地环境准备：
+PostgreSQL 与 Qdrant 本地环境准备：
 
 ```bash
 pnpm db:up
@@ -126,9 +136,25 @@ pnpm db:migrate
 TEST_DATABASE_URL=postgresql://ear:ear_dev@127.0.0.1:5434/ear pnpm test:integration
 ```
 
-数据库默认监听 `127.0.0.1:5434`，配置示例见 `.env.example`。设置 `DATABASE_URL` 后 API 自动装配 PostgreSQL Repository 与 `PostgresSaver`；不设置则使用内存实现。
+PostgreSQL 默认监听 `127.0.0.1:5434`，Qdrant 默认监听 `127.0.0.1:6333`，配置示例见 `.env.example`。设置 `DATABASE_URL` 后 API 自动装配 PostgreSQL Repository 与 `PostgresSaver`；设置 `QDRANT_URL` 后使用 Qdrant，否则使用内存向量索引。
 
 默认使用确定性 Model Provider。配置 `OPENAI_API_KEY` 与显式 `OPENAI_MODEL` 后，API 使用 Responses API Structured Outputs；模型仍不能直接执行工具或构造写操作参数。
+
+先发布一版租户制度并完成索引：
+
+```bash
+curl -X POST http://127.0.0.1:3001/api/knowledge/documents \
+  -H 'content-type: application/json' \
+  -H 'x-demo-tenant: tenant-a' \
+  -H 'x-demo-user: admin-1' \
+  -d '{
+    "documentKey": "supplier-policy",
+    "version": 1,
+    "title": "供应商准入制度",
+    "content": "# 高风险供应商\\n存在失信记录或重大资金异常时必须人工复核。",
+    "permissionTags": ["risk_reviewer"]
+  }'
+```
 
 当前演示身份使用请求头，`tenantId` 不从请求体读取：
 
@@ -167,7 +193,7 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
-- M2：进行中；Model Provider 与受约束动态取证 Loop 已完成，RAG 与 Web 工作台待实现。
+- M2：进行中；Model Provider、受约束动态 Loop、RAG 后端与可定位 Evidence 已完成，Web 工作台和评测待实现。
 - M3：PaaS 元数据工具、MCP、RN SDK 和第二 Agent。
 - M4：评测固化与面试交付。
 

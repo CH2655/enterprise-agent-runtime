@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type {
   AgentEvent,
   AgentEventListener,
@@ -15,12 +15,20 @@ import type {
 } from "@ear/agent-runtime";
 import { AgentIdentitySchema, type EvidenceRecord, type RiskFinding } from "@ear/domain";
 import type {
+  IngestKnowledgeInput,
+  KnowledgeChunk,
+  KnowledgeDocument,
+  KnowledgeOutboxRecord,
+  KnowledgeRepository,
+  ParsedKnowledgeChunk,
+} from "@ear/retrieval";
+import type {
   IdempotencyBeginResult,
   ToolAuditRecord,
   ToolAuditSink,
   ToolIdempotencyStore,
 } from "@ear/tool-registry";
-import { and, asc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
 import type { AgentDatabase } from "./index.js";
 import {
   agentEvents,
@@ -29,9 +37,212 @@ import {
   approvalTasks,
   evidenceRecords,
   idempotencyRecords,
+  knowledgeChunks,
+  knowledgeDocuments,
+  knowledgeOutbox,
   riskFindings,
   toolInvocations,
 } from "./schema.js";
+
+export class PostgresKnowledgeRepository implements KnowledgeRepository {
+  constructor(private readonly db: AgentDatabase) {}
+
+  async saveDocumentVersion(
+    input: IngestKnowledgeInput,
+    chunks: ParsedKnowledgeChunk[],
+  ): Promise<KnowledgeDocument> {
+    const id = randomUUID();
+    const createdAt = new Date().toISOString();
+    return this.db.transaction(async (tx) => {
+      await tx
+        .update(knowledgeDocuments)
+        .set({ status: "archived" })
+        .where(
+          and(
+            eq(knowledgeDocuments.tenantId, input.tenantId),
+            eq(knowledgeDocuments.documentKey, input.documentKey),
+            eq(knowledgeDocuments.status, "active"),
+          ),
+        );
+      const [row] = await tx
+        .insert(knowledgeDocuments)
+        .values({
+          id,
+          tenantId: input.tenantId,
+          documentKey: input.documentKey,
+          version: input.version,
+          title: input.title,
+          contentHash: sha256(input.content),
+          permissionTags: input.permissionTags,
+          createdBy: input.userId,
+          createdAt,
+        })
+        .returning();
+      if (!row) throw new Error("Failed to create knowledge document.");
+      await tx.insert(knowledgeChunks).values(
+        chunks.map((chunk) => ({
+          id: randomUUID(),
+          documentId: id,
+          tenantId: input.tenantId,
+          documentKey: input.documentKey,
+          documentVersion: input.version,
+          ordinal: chunk.ordinal,
+          section: chunk.section,
+          startLine: chunk.startLine,
+          endLine: chunk.endLine,
+          content: chunk.content,
+          contentHash: chunk.contentHash,
+          permissionTags: input.permissionTags,
+        })),
+      );
+      await tx.insert(knowledgeOutbox).values({
+        id: randomUUID(),
+        tenantId: input.tenantId,
+        documentId: id,
+      });
+      return fromKnowledgeDocumentRow(row);
+    });
+  }
+
+  async getDocumentVersion(tenantId: string, documentKey: string, version: number) {
+    const [row] = await this.db
+      .select()
+      .from(knowledgeDocuments)
+      .where(
+        and(
+          eq(knowledgeDocuments.tenantId, tenantId),
+          eq(knowledgeDocuments.documentKey, documentKey),
+          eq(knowledgeDocuments.version, version),
+        ),
+      )
+      .limit(1);
+    return row ? fromKnowledgeDocumentRow(row) : undefined;
+  }
+
+  async getDocument(documentId: string, tenantId: string) {
+    const [row] = await this.db
+      .select()
+      .from(knowledgeDocuments)
+      .where(
+        and(
+          eq(knowledgeDocuments.id, documentId),
+          eq(knowledgeDocuments.tenantId, tenantId),
+        ),
+      )
+      .limit(1);
+    return row ? fromKnowledgeDocumentRow(row) : undefined;
+  }
+
+  async getChunksForDocument(documentId: string, tenantId: string) {
+    const rows = await this.db
+      .select()
+      .from(knowledgeChunks)
+      .where(
+        and(
+          eq(knowledgeChunks.documentId, documentId),
+          eq(knowledgeChunks.tenantId, tenantId),
+        ),
+      )
+      .orderBy(asc(knowledgeChunks.ordinal));
+    return rows.map(fromKnowledgeChunkRow);
+  }
+
+  async getActiveChunksByIds(tenantId: string, chunkIds: string[]) {
+    if (chunkIds.length === 0) return [];
+    const rows = await this.db
+      .select({ chunk: knowledgeChunks })
+      .from(knowledgeChunks)
+      .innerJoin(knowledgeDocuments, eq(knowledgeDocuments.id, knowledgeChunks.documentId))
+      .where(
+        and(
+          eq(knowledgeChunks.tenantId, tenantId),
+          inArray(knowledgeChunks.id, chunkIds),
+          eq(knowledgeDocuments.tenantId, tenantId),
+          eq(knowledgeDocuments.status, "active"),
+        ),
+      );
+    return rows.map(({ chunk }) => fromKnowledgeChunkRow(chunk));
+  }
+
+  async claimIndexJobs(limit: number): Promise<KnowledgeOutboxRecord[]> {
+    const now = new Date();
+    const staleLock = new Date(now.getTime() - 5 * 60_000).toISOString();
+    return this.db.transaction(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(knowledgeOutbox)
+        .where(
+          and(
+            or(
+              and(
+                or(
+                  eq(knowledgeOutbox.status, "pending"),
+                  eq(knowledgeOutbox.status, "failed"),
+                ),
+                lte(knowledgeOutbox.availableAt, now.toISOString()),
+              ),
+              and(
+                eq(knowledgeOutbox.status, "processing"),
+                lte(knowledgeOutbox.lockedAt, staleLock),
+              ),
+            ),
+          ),
+        )
+        .orderBy(asc(knowledgeOutbox.availableAt), asc(knowledgeOutbox.createdAt))
+        .limit(limit)
+        .for("update", { skipLocked: true });
+      if (rows.length === 0) return [];
+      const ids = rows.map((row) => row.id);
+      const claimed = await tx
+        .update(knowledgeOutbox)
+        .set({
+          status: "processing",
+          attempts: sql`${knowledgeOutbox.attempts} + 1`,
+          error: null,
+          lockedAt: new Date().toISOString(),
+        })
+        .where(inArray(knowledgeOutbox.id, ids))
+        .returning();
+      return claimed.map(fromKnowledgeOutboxRow);
+    });
+  }
+
+  async completeIndexJob(jobId: string, documentId: string, indexed = true): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db.transaction(async (tx) => {
+      const completed = await tx
+        .update(knowledgeOutbox)
+        .set({ status: "completed", completedAt: now, lockedAt: null, error: null })
+        .where(
+          and(
+            eq(knowledgeOutbox.id, jobId),
+            eq(knowledgeOutbox.documentId, documentId),
+            eq(knowledgeOutbox.status, "processing"),
+          ),
+        )
+        .returning({ id: knowledgeOutbox.id });
+      if (completed.length !== 1) throw new Error(`Index job is not processing: ${jobId}`);
+      if (indexed) {
+        await tx
+          .update(knowledgeDocuments)
+          .set({ indexedAt: now })
+          .where(eq(knowledgeDocuments.id, documentId));
+      }
+    });
+  }
+
+  async failIndexJob(jobId: string, error: string): Promise<void> {
+    await this.db
+      .update(knowledgeOutbox)
+      .set({
+        status: "failed",
+        error: error.slice(0, 2_000),
+        availableAt: new Date().toISOString(),
+        lockedAt: null,
+      })
+      .where(and(eq(knowledgeOutbox.id, jobId), eq(knowledgeOutbox.status, "processing")));
+  }
+}
 
 export class PostgresAgentRunStore implements AgentRunStore {
   constructor(private readonly db: AgentDatabase) {}
@@ -438,4 +649,56 @@ function idempotencyWhere(input: { tenantId: string; toolName: string; key: stri
     eq(idempotencyRecords.toolName, input.toolName),
     eq(idempotencyRecords.key, input.key),
   );
+}
+
+function fromKnowledgeDocumentRow(
+  row: typeof knowledgeDocuments.$inferSelect,
+): KnowledgeDocument {
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    documentKey: row.documentKey,
+    version: row.version,
+    title: row.title,
+    contentHash: row.contentHash,
+    status: row.status,
+    permissionTags: row.permissionTags,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+    ...(row.indexedAt ? { indexedAt: row.indexedAt } : {}),
+  };
+}
+
+function fromKnowledgeChunkRow(row: typeof knowledgeChunks.$inferSelect): KnowledgeChunk {
+  return {
+    id: row.id,
+    documentId: row.documentId,
+    tenantId: row.tenantId,
+    documentKey: row.documentKey,
+    documentVersion: row.documentVersion,
+    ordinal: row.ordinal,
+    section: row.section,
+    startLine: row.startLine,
+    endLine: row.endLine,
+    content: row.content,
+    contentHash: row.contentHash,
+    permissionTags: row.permissionTags,
+  };
+}
+
+function fromKnowledgeOutboxRow(
+  row: typeof knowledgeOutbox.$inferSelect,
+): KnowledgeOutboxRecord {
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    documentId: row.documentId,
+    status: row.status,
+    attempts: row.attempts,
+    ...(row.error ? { error: row.error } : {}),
+  };
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
 }

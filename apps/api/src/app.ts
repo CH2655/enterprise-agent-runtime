@@ -7,7 +7,18 @@ import {
 import { InMemoryAgentEventStore } from "@ear/agent-protocol";
 import { identityFromJwtClaims } from "@ear/auth";
 import { AgentIdentitySchema } from "@ear/domain";
-import type { ModelProvider } from "@ear/model-provider";
+import {
+  DeterministicEmbeddingProvider,
+  type EmbeddingProvider,
+  type ModelProvider,
+} from "@ear/model-provider";
+import {
+  InMemoryVectorIndex,
+  KnowledgeIndexWorker,
+  KnowledgeIngestionService,
+  KnowledgeSearchService,
+  type VectorIndex,
+} from "@ear/retrieval";
 import { createRiskAgentDefinition, registerMockPaasTools } from "@ear/risk-agent";
 import { ToolAuthorizationError, ToolRegistry } from "@ear/tool-registry";
 import fastifyJwt from "@fastify/jwt";
@@ -24,6 +35,17 @@ const startRunBody = z.object({
 });
 
 const runParams = z.object({ runId: z.string().uuid() });
+const ingestKnowledgeBody = z.object({
+  documentKey: z.string().min(1),
+  version: z.number().int().positive(),
+  title: z.string().min(1),
+  content: z.string().min(1),
+  permissionTags: z.array(z.string().min(1)).default([]),
+});
+const searchKnowledgeQuery = z.object({
+  query: z.string().min(1),
+  limit: z.coerce.number().int().min(1).max(20).default(5),
+});
 
 export type AppAuthOptions =
   | { mode: "demo" }
@@ -38,6 +60,10 @@ export interface CreateAppOptions {
   auth?: AppAuthOptions;
   infrastructure?: RuntimeInfrastructure;
   modelProvider?: ModelProvider;
+  embeddingProvider?: EmbeddingProvider;
+  vectorIndex?: VectorIndex;
+  useKnowledgeSearchTool?: boolean;
+  knowledgeIndexIntervalMs?: number;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -53,6 +79,19 @@ export function createApp(options: CreateAppOptions = {}) {
     });
   }
   const infrastructure = options.infrastructure ?? createInMemoryInfrastructure();
+  const embeddings = options.embeddingProvider ?? new DeterministicEmbeddingProvider(64);
+  const vectorIndex = options.vectorIndex ?? new InMemoryVectorIndex();
+  const knowledgeIngestion = new KnowledgeIngestionService(infrastructure.knowledge);
+  const knowledgeWorker = new KnowledgeIndexWorker(
+    infrastructure.knowledge,
+    embeddings,
+    vectorIndex,
+  );
+  const knowledgeSearch = new KnowledgeSearchService(
+    infrastructure.knowledge,
+    embeddings,
+    vectorIndex,
+  );
   const events = infrastructure.events;
   const tools = new ToolRegistry(async (audit) => {
     await infrastructure.toolAudit?.(audit);
@@ -66,23 +105,57 @@ export function createApp(options: CreateAppOptions = {}) {
       payload: audit,
     });
   }, infrastructure.idempotency, infrastructure.objectPermissions);
-  registerMockPaasTools(tools);
+  registerMockPaasTools(tools, {
+    ...(options.useKnowledgeSearchTool ? { knowledgeSearch } : {}),
+  });
   const agents = new AgentRegistry();
   agents.register(
     createRiskAgentDefinition(infrastructure.checkpointer, options.modelProvider),
   );
   const runtime = new AgentRuntime(agents, tools, events, infrastructure.runs);
+  let knowledgeIndexTimer: NodeJS.Timeout | undefined;
 
   app.addHook("onReady", async () => {
     await runtime.recoverApprovedRuns();
+    await knowledgeWorker.runOnce();
+    knowledgeIndexTimer = setInterval(() => {
+      void knowledgeWorker.runOnce().catch((error) => {
+        app.log.error({ error }, "Knowledge indexing cycle failed");
+      });
+    }, options.knowledgeIndexIntervalMs ?? 2_000);
   });
 
   app.addHook("onClose", async () => {
+    if (knowledgeIndexTimer) clearInterval(knowledgeIndexTimer);
     await infrastructure.close();
   });
 
   app.get("/api/health", async () => ({ ok: true }));
   app.get("/api/agents", async () => runtime.listAgents());
+
+  app.post("/api/knowledge/documents", async (request, reply) => {
+    const identity = await identityFrom(request, auth);
+    requireScope(identity.scopes, "knowledge:write");
+    const body = ingestKnowledgeBody.parse(request.body);
+    const document = await knowledgeIngestion.ingest({
+      ...body,
+      tenantId: identity.tenantId,
+      userId: identity.userId,
+    });
+    return reply.code(202).send({ document, indexing: { status: "queued" } });
+  });
+
+  app.get("/api/knowledge/search", async (request) => {
+    const identity = await identityFrom(request, auth);
+    requireScope(identity.scopes, "knowledge:read");
+    const query = searchKnowledgeQuery.parse(request.query);
+    return knowledgeSearch.search({
+      tenantId: identity.tenantId,
+      query: query.query,
+      limit: query.limit,
+      permissionTags: identity.roles,
+    });
+  });
 
   app.post("/api/runs", async (request, reply) => {
     const body = startRunBody.parse(request.body);
@@ -144,7 +217,16 @@ export function createApp(options: CreateAppOptions = {}) {
     reply.code(statusCode).send({ error: normalized.name, message: normalized.message });
   });
 
-  return { app, runtime, events, tools, infrastructure };
+  return {
+    app,
+    runtime,
+    events,
+    tools,
+    infrastructure,
+    knowledgeIngestion,
+    knowledgeWorker,
+    knowledgeSearch,
+  };
 }
 
 async function identityFrom(request: FastifyRequest, auth: AppAuthOptions) {
@@ -156,8 +238,14 @@ async function identityFrom(request: FastifyRequest, auth: AppAuthOptions) {
     tenantId: request.headers["x-demo-tenant"],
     userId: request.headers["x-demo-user"],
     roles: ["risk_reviewer"],
-    scopes: ["risk:read", "risk:approve", "risk:write"],
+    scopes: ["risk:read", "risk:approve", "risk:write", "knowledge:read", "knowledge:write"],
   });
+}
+
+function requireScope(scopes: string[] | undefined, required: string): void {
+  if (!scopes?.includes(required)) {
+    throw new ToolAuthorizationError(`Missing scope: ${required}`);
+  }
 }
 
 function toSse(value: unknown): string {

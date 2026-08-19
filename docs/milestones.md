@@ -63,7 +63,7 @@
 
 ## M2：可演示的风控业务闭环
 
-**状态：进行中，Model Provider 与动态 Loop 已完成（2026-08-19）。**
+**状态：进行中，Model Provider、动态 Loop 与 RAG 后端已完成（2026-08-19）。**
 
 ### 目标
 
@@ -86,7 +86,10 @@
 - 已完成：`plan -> collect -> evaluate -> replan` 状态图，最多三轮，成功工具不重复。
 - 已完成：未知工具、写工具、无关工具和超预算计划由确定性策略拒绝并产生 `plan.rejected` 事件。
 - 已完成：模型生成候选 Finding，Evidence 引用仍由确定性节点校验。
-- 待完成：真实模型评测、Qdrant/RAG、文档版本定位、Web 工作台和事件投影。
+- 已完成：Markdown 文档版本、Chunk、确定性/OpenAI Embedding Provider、PostgreSQL Outbox 与 Qdrant 派生索引。
+- 已完成：租户过滤、活动版本二次校验、权限标签过滤，以及包含文档版本、Chunk、章节和行号的制度 Evidence。
+- 已完成：Qdrant 故障重试、陈旧任务锁回收和归档版本乱序任务跳过。
+- 待完成：真实模型与真实 Qdrant 评测、Web 工作台和事件投影。
 
 ### 明确不做
 

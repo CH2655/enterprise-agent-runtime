@@ -1,5 +1,6 @@
 import {
   ModelProviderOutputError,
+  OpenAIEmbeddingProvider,
   OpenAIResponsesModelProvider,
   ScriptedModelProvider,
 } from "@ear/model-provider";
@@ -106,5 +107,37 @@ describe("Model Provider", () => {
         schema: ResultSchema,
       }),
     ).rejects.toThrow("request refused");
+  });
+
+  it("应批量请求Embedding并按响应index恢复输入顺序", async () => {
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(
+        JSON.stringify({
+          data: [
+            { index: 1, embedding: [0, 1, 0] },
+            { index: 0, embedding: [1, 0, 0] },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const provider = new OpenAIEmbeddingProvider({
+      apiKey: "test-key",
+      model: "text-embedding-3-small",
+      dimensions: 3,
+      fetchImpl,
+    });
+
+    await expect(provider.embed(["制度", "供应商"])).resolves.toEqual([
+      [1, 0, 0],
+      [0, 1, 0],
+    ]);
+    const request = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body));
+    expect(request).toMatchObject({
+      model: "text-embedding-3-small",
+      input: ["制度", "供应商"],
+      dimensions: 3,
+      encoding_format: "float",
+    });
   });
 });

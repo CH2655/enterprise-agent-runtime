@@ -302,13 +302,15 @@ function createRiskGraph(
         successfulTools.push(result.toolName);
         delete toolFailures[result.toolName];
         toolResults[result.spec.resultKey] = result.output;
-        const item = evidenceOf(
-          context,
-          result.spec.category,
-          evidenceSourceType(result.spec.category),
-          result.toolName,
-          result.output,
-        );
+        const item = result.spec.category === "policy"
+          ? policyEvidenceOf(context, result.output)
+          : evidenceOf(
+              context,
+              result.spec.category,
+              evidenceSourceType(result.spec.category),
+              result.toolName,
+              result.output,
+            );
         evidence.push(item);
         await context.events.append(context.runId, {
           type: "evidence.added",
@@ -581,6 +583,30 @@ function evidenceOf(
     sourceType,
     sourceId,
     content: JSON.stringify(value),
+    collectedAt: new Date().toISOString(),
+  };
+}
+
+function policyEvidenceOf(
+  context: AgentExecutionContext,
+  value: unknown,
+): EvidenceRecord {
+  const policy = value as {
+    documentId: string;
+    content: string;
+    locator: string;
+    contentHash?: string;
+  };
+  return {
+    id: "evidence-policy",
+    tenantId: context.identity.tenantId,
+    runId: context.runId,
+    category: "policy",
+    sourceType: "knowledge",
+    sourceId: policy.documentId,
+    content: policy.content,
+    locator: policy.locator,
+    ...(policy.contentHash ? { hash: policy.contentHash } : {}),
     collectedAt: new Date().toISOString(),
   };
 }

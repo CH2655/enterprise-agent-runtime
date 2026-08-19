@@ -11,7 +11,7 @@
     "dev": "tsx apps/api/src/main.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d postgres qdrant",
     "db:down": "docker compose down",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

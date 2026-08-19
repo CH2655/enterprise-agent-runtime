@@ -15,6 +15,20 @@
       "when": 1787145637229,
       "tag": "0001_slim_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787153015374,
+      "tag": "0002_cultured_mesmero",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787153489540,
+      "tag": "0003_goofy_unus",
+      "breakpoints": true
     }
   ]
 }

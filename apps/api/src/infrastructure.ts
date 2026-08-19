@@ -11,8 +11,13 @@ import {
   createPostgresToolAuditSink,
   PostgresAgentEventStore,
   PostgresAgentRunStore,
+  PostgresKnowledgeRepository,
   PostgresToolIdempotencyStore,
 } from "@ear/persistence";
+import {
+  InMemoryKnowledgeRepository,
+  type KnowledgeRepository,
+} from "@ear/retrieval";
 import {
   InMemoryToolIdempotencyStore,
   type ObjectPermissionPolicy,
@@ -30,6 +35,7 @@ export interface RuntimeInfrastructure {
   checkpointer: BaseCheckpointSaver;
   toolAudit?: ToolAuditSink;
   objectPermissions: ObjectPermissionPolicy;
+  knowledge: KnowledgeRepository;
   close(): Promise<void>;
 }
 
@@ -40,6 +46,7 @@ export function createInMemoryInfrastructure(): RuntimeInfrastructure {
     idempotency: new InMemoryToolIdempotencyStore(),
     checkpointer: new MemorySaver(),
     objectPermissions: createDevelopmentObjectPermissionPolicy(),
+    knowledge: new InMemoryKnowledgeRepository(),
     close: async () => undefined,
   };
 }
@@ -57,6 +64,7 @@ export async function createPostgresInfrastructure(
     checkpointer,
     toolAudit: createPostgresToolAuditSink(connection.db),
     objectPermissions: createDevelopmentObjectPermissionPolicy(),
+    knowledge: new PostgresKnowledgeRepository(connection.db),
     close: () => connection.close(),
   };
 }
