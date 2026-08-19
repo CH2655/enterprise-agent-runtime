@@ -7,6 +7,7 @@ import {
 import { InMemoryAgentEventStore } from "@ear/agent-protocol";
 import { identityFromJwtClaims } from "@ear/auth";
 import { AgentIdentitySchema } from "@ear/domain";
+import type { ModelProvider } from "@ear/model-provider";
 import { createRiskAgentDefinition, registerMockPaasTools } from "@ear/risk-agent";
 import { ToolAuthorizationError, ToolRegistry } from "@ear/tool-registry";
 import fastifyJwt from "@fastify/jwt";
@@ -36,6 +37,7 @@ export type AppAuthOptions =
 export interface CreateAppOptions {
   auth?: AppAuthOptions;
   infrastructure?: RuntimeInfrastructure;
+  modelProvider?: ModelProvider;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -66,7 +68,9 @@ export function createApp(options: CreateAppOptions = {}) {
   }, infrastructure.idempotency, infrastructure.objectPermissions);
   registerMockPaasTools(tools);
   const agents = new AgentRegistry();
-  agents.register(createRiskAgentDefinition(infrastructure.checkpointer));
+  agents.register(
+    createRiskAgentDefinition(infrastructure.checkpointer, options.modelProvider),
+  );
   const runtime = new AgentRuntime(agents, tools, events, infrastructure.runs);
 
   app.addHook("onReady", async () => {

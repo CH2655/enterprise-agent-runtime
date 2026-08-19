@@ -14,6 +14,7 @@ export default defineConfig({
       "@ear/agent-runtime": source("./packages/agent-runtime/src/index.ts"),
       "@ear/auth": source("./packages/auth/src/index.ts"),
       "@ear/persistence": source("./packages/persistence/src/index.ts"),
+      "@ear/model-provider": source("./packages/model-provider/src/index.ts"),
       "@ear/risk-agent": source("./agents/risk-agent/src/index.ts"),
     },
   },

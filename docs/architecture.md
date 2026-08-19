@@ -139,13 +139,15 @@ sequenceDiagram
 
 ## 6. 当前实现
 
-当前实现是目标架构的可靠 Runtime 切片：
+当前实现是目标架构的可靠 Runtime 与动态规划切片：
 
 ```text
 POST /api/runs
   -> AgentRuntime.start
-  -> Risk Agent 固定 collect/evaluate/synthesize/verify 图
-  -> Tool Registry 调用五个 Mock 只读工具
+  -> Risk Agent 通过 Model Provider 生成结构化只读取证计划
+  -> 控制面校验白名单、缺失维度、重复工具和轮次预算
+  -> Tool Registry 执行本轮 Mock 只读工具
+  -> evaluate 计算缺失维度，最多 replan 三轮
   -> 生成五条 Evidence 与两条 Finding
   -> waiting_approval
 POST /api/runs/:id/approve
@@ -159,7 +161,7 @@ POST /api/runs/:id/approve
 
 故障注入覆盖“写工具和 checkpoint 已完成，但 Run 状态保存失败”的窗口。恢复逻辑先读取最终 checkpoint：图已结束则只校准 Run；图仍暂停才恢复执行。稳定幂等键会传递给工具适配器，因此不会产生第二条整改任务。
 
-该阶段仍使用确定性 Mock 工具和规则，尚未证明真实模型规划、知识检索或生产规模。
+Model Provider 提供确定性测试实现和 OpenAI Responses API Structured Outputs 实现。模型只负责计划与候选 Finding；工具参数、路由、预算、权限、引用校验和副作用仍由确定性代码控制。当前尚未用真实案件建立模型质量基线，也未实现知识检索或生产规模验证。
 
 ## 7. 可靠性语义
 

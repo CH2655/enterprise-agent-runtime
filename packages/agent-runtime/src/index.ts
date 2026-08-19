@@ -284,7 +284,7 @@ export class AgentRuntime {
           initial,
           record,
           identity.userId,
-          record.status === "waiting_approval" ? "execution.paused" : "execution.completed",
+          executionTransitionReason(record.status),
         ),
       );
       await this.runs.saveArtifacts({
@@ -454,4 +454,11 @@ function transitionFrom(
     actorId,
     reason,
   };
+}
+
+function executionTransitionReason(status: AgentRunStatus): string {
+  if (status === "waiting_approval") return "execution.paused";
+  if (status === "waiting_input") return "execution.waiting_input";
+  if (status === "failed") return "execution.failed";
+  return "execution.completed";
 }

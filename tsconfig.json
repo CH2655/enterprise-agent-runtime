@@ -17,6 +17,7 @@
       "@ear/agent-runtime": ["packages/agent-runtime/src/index.ts"],
       "@ear/auth": ["packages/auth/src/index.ts"],
       "@ear/persistence": ["packages/persistence/src/index.ts"],
+      "@ear/model-provider": ["packages/model-provider/src/index.ts"],
       "@ear/risk-agent": ["agents/risk-agent/src/index.ts"]
     }
   },

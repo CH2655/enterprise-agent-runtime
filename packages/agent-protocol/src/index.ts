@@ -4,6 +4,8 @@ export const AgentEventTypeSchema = z.enum([
   "run.created",
   "node.started",
   "node.progress",
+  "plan.created",
+  "plan.rejected",
   "tool.started",
   "tool.completed",
   "tool.failed",
@@ -13,6 +15,7 @@ export const AgentEventTypeSchema = z.enum([
   "node.failed",
   "run.completed",
   "run.failed",
+  "run.waiting_input",
 ]);
 
 export type AgentEventType = z.infer<typeof AgentEventTypeSchema>;

@@ -34,8 +34,11 @@
 - Run 状态转换与 Run 更新在同一事务提交，记录前后状态、操作者、原因和时间，并提供租户隔离的查询 API。
 - Tool Registry 在工具执行前按 RNModules/PaaS 的 `appName + metaName + action + objectId` 语义校验对象权限。
 - API 启动时自动扫描“审批已完成但 Run 未结束”的记录，从持久化 checkpoint 校准或恢复执行。
-- 离线 Mock 工具和确定性规则，不需要模型 API Key。
-- 6 个测试文件、22 个测试；真实 PostgreSQL 17 集成测试覆盖重启恢复、审批并发、崩溃窗口、事件并发序号、持久化幂等、状态审计和对象权限拒绝。
+- Model Provider 契约、可脚本化确定性实现和 OpenAI Responses API Structured Outputs 实现。
+- 受约束动态 Loop：`plan -> collect -> evaluate -> replan`，只允许只读工具、最多三轮、成功工具不重复。
+- 模型生成候选 Finding，确定性代码继续负责工具白名单、参数构造、Evidence 引用校验和写操作审批。
+- 未配置模型 Key 时使用离线确定性 Provider，完整流程可重复测试。
+- 7 个测试文件、29 个测试；覆盖重启恢复、审批并发、崩溃窗口、动态补取、非法计划、有界终止和结构化模型输出。
 
 ## 当前限制
 
@@ -45,8 +48,8 @@
 - 事件与 Run 创建、Run 状态与 Evidence/Finding 保存尚未合并为单个业务事务，故障后需要校准。
 - 对象权限接口与规则适配器已经实现，真实 PaaS 权限服务客户端尚未接入。
 - “最多一次业务副作用”依赖稳定幂等键和下游适配器遵守该键，不宣称分布式 exactly-once。
-- 风险结论、业务工具和制度检索都是 Mock，没有真实 LLM 和 RAG。
-- 当前取证 Loop 结构存在，但 Mock 数据首轮即达到 100% 覆盖，尚未实现动态补充计划。
+- OpenAI Provider 已实现但未使用真实 Key 建立质量/延迟/成本基线；默认仍运行确定性 Provider。
+- 业务工具和制度检索仍为 Mock，没有 Qdrant、文档解析、Embedding 和真实 RAG。
 - 只有 Risk Agent，没有 Web/RN 客户端和第二业务 Agent。
 
 ## 架构原则
@@ -96,6 +99,7 @@ packages/tool-registry/    工具治理、幂等、超时和审计
 packages/agent-protocol/   事件、sequence、补发和订阅
 packages/auth/             JWT Claims 到可信 IdentityContext
 packages/persistence/      Drizzle Schema、PostgreSQL Repository 和审计
+packages/model-provider/   结构化模型契约、离线实现和 OpenAI Provider
 __tests__/                 工作流与平台包测试
 docs/                      PRD、架构、ADR、里程碑与验收
 ```
@@ -123,6 +127,8 @@ TEST_DATABASE_URL=postgresql://ear:ear_dev@127.0.0.1:5434/ear pnpm test:integrat
 ```
 
 数据库默认监听 `127.0.0.1:5434`，配置示例见 `.env.example`。设置 `DATABASE_URL` 后 API 自动装配 PostgreSQL Repository 与 `PostgresSaver`；不设置则使用内存实现。
+
+默认使用确定性 Model Provider。配置 `OPENAI_API_KEY` 与显式 `OPENAI_MODEL` 后，API 使用 Responses API Structured Outputs；模型仍不能直接执行工具或构造写操作参数。
 
 当前演示身份使用请求头，`tenantId` 不从请求体读取：
 
@@ -161,7 +167,7 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
-- M2：真实风控业务闭环与 Web 工作台。
+- M2：进行中；Model Provider 与受约束动态取证 Loop 已完成，RAG 与 Web 工作台待实现。
 - M3：PaaS 元数据工具、MCP、RN SDK 和第二 Agent。
 - M4：评测固化与面试交付。
 

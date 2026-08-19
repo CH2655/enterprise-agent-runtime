@@ -63,6 +63,8 @@
 
 ## M2：可演示的风控业务闭环
 
+**状态：进行中，Model Provider 与动态 Loop 已完成（2026-08-19）。**
+
 ### 目标
 
 完成真实模型、真实知识检索和 Web 人机协作，使风控 Agent 达到主项目演示标准。
@@ -77,6 +79,14 @@
 6. 建设 React + Vite 工作台：任务列表、创建任务、Run 详情和审批。
 7. 使用 TanStack Query 管理服务端状态，Zustand 实现事件投影和重连游标。
 8. 建立脱敏风控与检索评测集，生成第一版指标报告。
+
+### 当前进展
+
+- 已完成：通用结构化 Model Provider、确定性测试 Provider、OpenAI Responses API Provider。
+- 已完成：`plan -> collect -> evaluate -> replan` 状态图，最多三轮，成功工具不重复。
+- 已完成：未知工具、写工具、无关工具和超预算计划由确定性策略拒绝并产生 `plan.rejected` 事件。
+- 已完成：模型生成候选 Finding，Evidence 引用仍由确定性节点校验。
+- 待完成：真实模型评测、Qdrant/RAG、文档版本定位、Web 工作台和事件投影。
 
 ### 明确不做
 
