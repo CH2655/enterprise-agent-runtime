@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+  - agents/*
+  - mcp-servers/*
+
+allowBuilds:
+  esbuild: true
+
+onlyBuiltDependencies:
+  - esbuild

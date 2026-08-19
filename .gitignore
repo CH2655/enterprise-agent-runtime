@@ -1,0 +1,35 @@
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# Build, test and runtime output
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+*.log
+logs/
+*.pid
+tmp/
+temp/
+
+# Local database volumes and dumps
+postgres-data/
+*.sql.dump
+*.backup
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,39 @@
+{
+  "name": "enterprise-agent-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.16.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx apps/api/src/main.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run __tests__/packages/persistence/runtime.integration.test.ts",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@fastify/jwt": "^10.2.2",
+    "@langchain/langgraph": "1.4.9",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.4",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "5.11.3",
+    "pg": "^8.23.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
