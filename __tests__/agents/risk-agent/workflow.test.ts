@@ -155,6 +155,71 @@ describe("项目风控 Agent", () => {
     ).toBe(true);
   });
 
+  it("应拒绝与结构化业务事实冲突的模型候选风险", async () => {
+    const model = new ScriptedModelProvider({
+      "risk.plan": ({ input }) => ({
+        rationale: "完成全部必要取证",
+        tools: (input as { missingCategories: string[] }).missingCategories.map((category) => ({
+          project: "get_project_profile",
+          supplier: "get_supplier_profile",
+          "enterprise-risk": "get_enterprise_risks",
+          "bank-statement": "get_bank_statement_summary",
+          policy: "search_internal_policy",
+        })[category]),
+      }),
+      "risk.synthesize": () => ({
+        findings: [
+          {
+            id: "unsupported-credit",
+            dimension: "企业信用",
+            level: "high",
+            claim: "制度提到失信，因此当前供应商存在信用风险。",
+            evidenceIds: ["evidence-enterprise-risk", "evidence-policy"],
+            confidence: 0.9,
+            recommendation: "人工复核。",
+          },
+          {
+            id: "unsupported-cash",
+            dimension: "资金稳定性",
+            level: "medium",
+            claim: "制度提到资金异常，因此当前供应商资金不稳定。",
+            evidenceIds: ["evidence-bank-statement", "evidence-policy"],
+            confidence: 0.8,
+            recommendation: "补充流水。",
+          },
+        ],
+      }),
+    });
+    const guardedEvents = new InMemoryAgentEventStore();
+    const guardedTools = new ToolRegistry(
+      undefined,
+      undefined,
+      new RuleBasedObjectPermissionPolicy([{ appName: "*", metaName: "*", action: "*" }]),
+    );
+    registerMockPaasTools(guardedTools, {
+      enterpriseRisk: { dishonest: false, legalCaseCount: 0 },
+      bankStatement: { abnormalTransactions: 1, cashFlowStable: true },
+    });
+    const agents = new AgentRegistry();
+    agents.register(createRiskAgentDefinition(undefined, model));
+    const guardedRuntime = new AgentRuntime(agents, guardedTools, guardedEvents);
+
+    const run = await guardedRuntime.start(
+      "risk-agent",
+      { caseId: "case-fact-guard", projectCode: "P-1", supplierCode: "S-1" },
+      { tenantId: "tenant-a", userId: "reviewer-1" },
+    );
+    const state = run.state as RiskAgentState;
+
+    expect(run.status).toBe("completed");
+    expect(state.findings).toEqual([]);
+    expect(state.rejectedFindings).toHaveLength(2);
+    expect((await guardedEvents.replay(run.id)).some((event) =>
+      event.type === "node.progress" &&
+      (event.payload as { rejectedFindings?: unknown[] }).rejectedFindings?.length === 2
+    )).toBe(true);
+  });
+
   it("应在工具持续失败时最多执行三轮并进入人工补充", async () => {
     const toolByCategory: Record<string, string> = {
       project: "get_project_profile",

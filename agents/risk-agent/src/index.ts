@@ -49,6 +49,11 @@ const RiskSynthesisSchema = z.object({
 
 type RiskToolName = keyof typeof TOOL_SPECS;
 
+export interface RejectedRiskFinding {
+  findingId: string;
+  issues: string[];
+}
+
 interface RiskToolSpec {
   category: (typeof REQUIRED_CATEGORIES)[number];
   description: string;
@@ -99,6 +104,7 @@ export interface RiskAgentState {
   planIssues: string[];
   evidence: EvidenceRecord[];
   findings: RiskFinding[];
+  rejectedFindings: RejectedRiskFinding[];
   coverage: number;
   toolResults: Record<string, unknown>;
   toolFailures: Record<string, string>;
@@ -122,6 +128,10 @@ const RiskState = Annotation.Root({
     default: () => [],
   }),
   findings: Annotation<RiskFinding[]>({ reducer: (_current, update) => update, default: () => [] }),
+  rejectedFindings: Annotation<RejectedRiskFinding[]>({
+    reducer: (_current, update) => update,
+    default: () => [],
+  }),
   coverage: Annotation<number>({ reducer: (_current, update) => update, default: () => 0 }),
   toolResults: Annotation<Record<string, unknown>>({
     reducer: (current, update) => ({ ...current, ...update }),
@@ -163,6 +173,7 @@ export function createRiskAgentDefinition(
           planIssues: [],
           evidence: [],
           findings: [],
+          rejectedFindings: [],
           coverage: 0,
           toolResults: {},
           toolFailures: {},
@@ -358,12 +369,26 @@ function createRiskGraph(
             "dimension 只能使用“企业信用”或“资金稳定性”。",
             "企业信用结论必须同时引用 enterprise-risk 与 policy 证据；资金稳定性结论必须同时引用 bank-statement 与 policy 证据。",
             "没有对应风险事实时不要生成该维度 Finding。",
+            "只有 enterpriseRisk.dishonest=true 才能生成企业信用 Finding；制度中描述的触发条件不代表当前案件已发生。",
+            "只有 bankStatement.cashFlowStable=false 才能生成资金稳定性 Finding；cashFlowStable=true 时即使存在少量交易也不得判为风险。",
+            "项目预算、供应商注册资本和制度阈值是背景信息，不能替代当前案件风险事实。",
           ].join("\n"),
           input: { request: state.request, evidence: state.evidence, toolResults: state.toolResults },
           schemaName: "risk_findings",
           schema: RiskSynthesisSchema,
         });
-        return { findings: result.findings };
+        const validated = validateCandidateFindings(result.findings, state);
+        if (validated.rejected.length > 0) {
+          await context.events.append(context.runId, {
+            type: "node.progress",
+            nodeId: "synthesize",
+            payload: {
+              message: `已拒绝 ${validated.rejected.length} 条缺少事实支撑的候选风险`,
+              rejectedFindings: validated.rejected,
+            },
+          });
+        }
+        return { findings: validated.accepted, rejectedFindings: validated.rejected };
       } catch (error) {
         const issue = error instanceof Error ? error.message : String(error);
         await context.events.append(context.runId, {
@@ -468,6 +493,56 @@ function createRiskGraph(
     .addEdge("human_review", END);
 
   return graph.compile({ checkpointer });
+}
+
+function validateCandidateFindings(
+  findings: RiskFinding[],
+  state: RiskAgentState,
+): { accepted: RiskFinding[]; rejected: RejectedRiskFinding[] } {
+  const evidenceById = new Map(state.evidence.map((item) => [item.id, item]));
+  const enterpriseRisk = state.toolResults.enterpriseRisk as
+    | { dishonest?: boolean; legalCaseCount?: number }
+    | undefined;
+  const bankStatement = state.toolResults.bankStatement as
+    | { abnormalTransactions?: number; cashFlowStable?: boolean }
+    | undefined;
+  const accepted: RiskFinding[] = [];
+  const rejected: RejectedRiskFinding[] = [];
+  for (const finding of findings) {
+    const issues: string[] = [];
+    const citedCategories = new Set(
+      finding.evidenceIds.flatMap((id) => {
+        const evidence = evidenceById.get(id);
+        return evidence ? [evidence.category] : [];
+      }),
+    );
+    if (finding.dimension === "企业信用") {
+      if (enterpriseRisk?.dishonest !== true) {
+        issues.push("enterpriseRisk.dishonest is not true");
+      }
+      requireFindingCategories(citedCategories, ["enterprise-risk", "policy"], issues);
+    } else if (finding.dimension === "资金稳定性") {
+      if (bankStatement?.cashFlowStable !== false) {
+        issues.push("bankStatement.cashFlowStable is not false");
+      }
+      requireFindingCategories(citedCategories, ["bank-statement", "policy"], issues);
+    } else {
+      issues.push(`unsupported risk dimension: ${finding.dimension}`);
+    }
+    if (issues.length === 0) accepted.push(finding);
+    else rejected.push({ findingId: finding.id, issues });
+  }
+  return { accepted, rejected };
+}
+
+function requireFindingCategories(
+  actual: Set<string>,
+  required: string[],
+  issues: string[],
+): void {
+  for (const category of required) {
+    if (!actual.has(category)) issues.push(`missing cited evidence category: ${category}`);
+  }
 }
 
 function validatePlan(plan: RiskPlan, state: RiskAgentState): string[] {

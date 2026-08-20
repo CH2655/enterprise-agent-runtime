@@ -22,6 +22,7 @@ console.log(JSON.stringify({
   citationAccuracy: report.quality.citationAccuracy,
   taskSuccessRate: report.quality.taskSuccessRate,
   recoveryPassRate: report.quality.recoveryPassRate,
+  candidateRejectionRate: report.quality.candidateRejectionRate,
   p95DurationMs: report.latency.p95DurationMs,
   tenantLeakage: report.security.tenantLeakage,
   duplicateSideEffects: report.security.duplicateSideEffects,

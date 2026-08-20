@@ -25,6 +25,7 @@ export function renderE2MarkdownReport(report: E2EvaluationReport): string {
     distributionRow("Evidence Validity", report.quality.evidenceValidity, "100%"),
     distributionRow("Task Success Rate", report.quality.taskSuccessRate, "recorded"),
     distributionRow("Recovery Pass Rate", report.quality.recoveryPassRate, "100%"),
+    distributionRow("Candidate Rejection Rate", report.quality.candidateRejectionRate, "<= 10%"),
     "",
     `- Tenant leakage across all runs: ${report.security.tenantLeakage}`,
     `- Duplicate side effects across all runs: ${report.security.duplicateSideEffects}`,

@@ -24,6 +24,7 @@ export function renderRealMarkdownReport(report: RealM2EvaluationReport): string
     metric("Retrieval Recall@5", percentage(report.retrieval.recallAt5), ">= 85%", report.thresholds.retrievalRecallAt5),
     metric("Citation Accuracy", percentage(report.risk.citationAccuracy), ">= 90%", report.thresholds.citationAccuracy),
     metric("Evidence Validity", percentage(report.risk.evidenceValidity), "100%", report.thresholds.evidenceValidity),
+    metric("Candidate Rejection Rate", percentage(report.risk.candidateRejectionRate), "<= 10%", report.thresholds.candidateRejectionRate),
     metric("Task Success Rate", percentage(report.risk.taskSuccessRate), "baseline", report.risk.taskSuccessRate === 1),
     metric("Tenant Leakage", String(report.security.tenantLeakage), "0", report.thresholds.tenantLeakage),
     metric("Duplicate Side Effects", String(report.risk.duplicateSideEffects), "0", report.thresholds.duplicateSideEffects),

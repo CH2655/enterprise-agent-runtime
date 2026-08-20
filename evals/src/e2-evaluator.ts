@@ -39,6 +39,7 @@ export interface E2EvaluationReport {
     evidenceValidity: MetricDistribution;
     taskSuccessRate: MetricDistribution;
     recoveryPassRate: MetricDistribution;
+    candidateRejectionRate: MetricDistribution;
   };
   latency: {
     p50DurationMs: MetricDistribution;
@@ -81,6 +82,7 @@ export function buildE2EvaluationReport(
     evidenceValidity: distribution(runs.map((item) => item.risk.evidenceValidity)),
     taskSuccessRate: distribution(runs.map((item) => item.risk.taskSuccessRate)),
     recoveryPassRate: distribution(runs.map((item) => item.recovery.passRate)),
+    candidateRejectionRate: distribution(runs.map((item) => item.risk.candidateRejectionRate)),
   };
   const latency = {
     p50DurationMs: distribution(runs.map((item) => item.risk.p50DurationMs)),
@@ -97,6 +99,7 @@ export function buildE2EvaluationReport(
     citationAccuracy: quality.citationAccuracy.min >= 0.9,
     evidenceValidity: quality.evidenceValidity.min === 1,
     recoveryPassRate: quality.recoveryPassRate.min === 1,
+    candidateRejectionRate: quality.candidateRejectionRate.max <= 0.1,
     tenantLeakage: security.tenantLeakage === 0,
     duplicateSideEffects: security.duplicateSideEffects === 0,
     taskSuccessVariance: quality.taskSuccessRate.standardDeviation <= 0.05,

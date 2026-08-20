@@ -98,13 +98,23 @@ const tools: ToolDefinition<any, any>[] = [
 
 export interface MockPaasToolOptions {
   knowledgeSearch?: Pick<KnowledgeSearchService, "search">;
+  enterpriseRisk?: { dishonest: boolean; legalCaseCount: number };
+  bankStatement?: { abnormalTransactions: number; cashFlowStable: boolean };
 }
 
 export function registerMockPaasTools(
   registry: ToolRegistry,
   options: MockPaasToolOptions = {},
 ): void {
-  for (const tool of tools) registry.register(tool);
+  for (const tool of tools) {
+    if (tool.name === "get_enterprise_risks" && options.enterpriseRisk) {
+      registry.register({ ...tool, execute: async () => options.enterpriseRisk! });
+    } else if (tool.name === "get_bank_statement_summary" && options.bankStatement) {
+      registry.register({ ...tool, execute: async () => options.bankStatement! });
+    } else {
+      registry.register(tool);
+    }
+  }
   registry.register(createPolicySearchTool(options.knowledgeSearch));
 }
 

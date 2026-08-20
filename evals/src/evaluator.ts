@@ -49,6 +49,8 @@ export interface RiskCaseResult {
   durationMs: number;
   evidenceValidity: number;
   citationAccuracy: number;
+  candidateFindings: number;
+  rejectedFindings: number;
   duplicateSideEffects: number;
   passed: boolean;
   issues: string[];
@@ -79,6 +81,7 @@ export interface M2EvaluationReport {
     taskSuccessRate: number;
     evidenceValidity: number;
     citationAccuracy: number;
+    candidateRejectionRate: number;
     duplicateSideEffects: number;
     p50DurationMs: number;
     p95DurationMs: number;
@@ -91,6 +94,7 @@ export interface M2EvaluationReport {
     retrievalRecallAt5: boolean;
     citationAccuracy: boolean;
     evidenceValidity: boolean;
+    candidateRejectionRate: boolean;
     tenantLeakage: boolean;
     duplicateSideEffects: boolean;
   };
@@ -136,6 +140,9 @@ export async function runM2Evaluation(options: EvaluationRunOptions = {}): Promi
   const evidenceValidity = average(riskCases.map((item) => item.evidenceValidity));
   const citationCases = riskCases.filter((item) => item.citationAccuracy >= 0);
   const citationAccuracy = average(citationCases.map((item) => item.citationAccuracy));
+  const candidateFindings = sum(riskCases.map((item) => item.candidateFindings));
+  const rejectedFindings = sum(riskCases.map((item) => item.rejectedFindings));
+  const candidateRejectionRate = candidateFindings === 0 ? 0 : ratio(rejectedFindings, candidateFindings);
   const duplicateSideEffects = sum(riskCases.map((item) => item.duplicateSideEffects));
   const tenantLeakage = sum(securityCases.map((item) => item.leaks));
   const durations = riskCases.map((item) => item.durationMs);
@@ -143,6 +150,7 @@ export async function runM2Evaluation(options: EvaluationRunOptions = {}): Promi
     retrievalRecallAt5: retrievalRecallAt5 >= 0.85,
     citationAccuracy: citationAccuracy >= 0.9,
     evidenceValidity: evidenceValidity === 1,
+    candidateRejectionRate: candidateRejectionRate <= 0.1,
     tenantLeakage: tenantLeakage === 0,
     duplicateSideEffects: duplicateSideEffects === 0,
   };
@@ -163,6 +171,7 @@ export async function runM2Evaluation(options: EvaluationRunOptions = {}): Promi
       taskSuccessRate,
       evidenceValidity,
       citationAccuracy,
+      candidateRejectionRate,
       duplicateSideEffects,
       p50DurationMs: percentile(durations, 0.5),
       p95DurationMs: percentile(durations, 0.95),
@@ -302,6 +311,8 @@ async function evaluateRiskCase(testCase: RiskEvaluationCase): Promise<RiskCaseR
     durationMs,
     evidenceValidity: ratio(validCitations, citations.length),
     citationAccuracy: citations.length === 0 ? -1 : ratio(supportedCitations, citations.length),
+    candidateFindings: state.findings.length + state.rejectedFindings.length,
+    rejectedFindings: state.rejectedFindings.length,
     duplicateSideEffects: Math.max(0, completedWrites - 1),
     passed: issues.length === 0,
     issues,

@@ -87,6 +87,7 @@ function realRun(
       taskSuccessRate: overrides.taskSuccessRate ?? 1,
       evidenceValidity: 1,
       citationAccuracy: 1,
+      candidateRejectionRate: 0,
       duplicateSideEffects: 0,
       p50DurationMs: 80,
       p95DurationMs: overrides.p95DurationMs ?? 100,

@@ -77,6 +77,7 @@ export interface RealM2EvaluationReport {
     taskSuccessRate: number;
     evidenceValidity: number;
     citationAccuracy: number;
+    candidateRejectionRate: number;
     duplicateSideEffects: number;
     p50DurationMs: number;
     p95DurationMs: number;
@@ -289,6 +290,8 @@ async function evaluateRealRiskCase(
     durationMs,
     evidenceValidity: ratio(validCitations, citations.length),
     citationAccuracy: citations.length === 0 ? -1 : ratio(supportedCitations, citations.length),
+    candidateFindings: state.findings.length + state.rejectedFindings.length,
+    rejectedFindings: state.rejectedFindings.length,
     duplicateSideEffects: Math.max(0, completedWrites - 1),
     passed: issues.length === 0,
     issues,
@@ -313,6 +316,9 @@ function buildReport(input: {
   const citationCases = input.riskCases.filter((item) => item.citationAccuracy >= 0);
   const citationAccuracy = average(citationCases.map((item) => item.citationAccuracy));
   const evidenceValidity = average(input.riskCases.map((item) => item.evidenceValidity));
+  const candidateFindings = sum(input.riskCases.map((item) => item.candidateFindings));
+  const rejectedFindings = sum(input.riskCases.map((item) => item.rejectedFindings));
+  const candidateRejectionRate = candidateFindings === 0 ? 0 : ratio(rejectedFindings, candidateFindings);
   const duplicateSideEffects = sum(input.riskCases.map((item) => item.duplicateSideEffects));
   const tenantLeakage = sum(input.securityCases.map((item) => item.leaks));
   const recoveryPassRate = ratio(
@@ -333,6 +339,7 @@ function buildReport(input: {
     retrievalRecallAt5: retrievalRecall >= 0.85,
     citationAccuracy: citationAccuracy >= 0.9,
     evidenceValidity: evidenceValidity === 1,
+    candidateRejectionRate: candidateRejectionRate <= 0.1,
     tenantLeakage: tenantLeakage === 0,
     duplicateSideEffects: duplicateSideEffects === 0,
     recoveryPassRate: recoveryPassRate === 1,
@@ -363,6 +370,7 @@ function buildReport(input: {
       taskSuccessRate,
       evidenceValidity,
       citationAccuracy,
+      candidateRejectionRate,
       duplicateSideEffects,
       p50DurationMs: percentile(durations, 0.5),
       p95DurationMs: percentile(durations, 0.95),
@@ -521,6 +529,7 @@ function normalizeRiskState(raw: unknown, request: RiskEvaluationCaseInput, stat
     planIssues: state.planIssues ?? [],
     evidence: state.evidence ?? [],
     findings: state.findings ?? [],
+    rejectedFindings: state.rejectedFindings ?? [],
     coverage: state.coverage ?? 0,
     toolResults: state.toolResults ?? {},
     toolFailures: state.toolFailures ?? {},
