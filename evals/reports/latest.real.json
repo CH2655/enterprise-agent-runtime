@@ -1,0 +1,767 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "real",
+  "generatedAt": "2026-08-20T04:48:18.550Z",
+  "gitRevision": "25b5106",
+  "providers": {
+    "model": "qwen3.7-max",
+    "embedding": "text-embedding-v4",
+    "embeddingDimensions": 256,
+    "database": "postgresql",
+    "vectorIndex": "qdrant"
+  },
+  "datasets": {
+    "retrieval": "retrieval.v1",
+    "risk": "risk-cases.v1",
+    "tenantAttacks": "tenant-attacks.v1"
+  },
+  "retrieval": {
+    "cases": [
+      {
+        "id": "ret-a-credit",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "失信复核",
+            "score": 0.8395
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.5047
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "异常转账",
+            "score": 0.4956
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "预付款控制",
+            "score": 0.4878
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "整改跟踪",
+            "score": 0.4771
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-a-capital",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "注册资本",
+            "score": 0.8528
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "资金异常",
+            "score": 0.5563
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.5303
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "异常转账",
+            "score": 0.5049
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "流水核验",
+            "score": 0.4986
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-a-prepayment",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "预付款控制",
+            "score": 0.8982
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "注册资本",
+            "score": 0.5652
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.5286
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "资金异常",
+            "score": 0.4893
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "异常转账",
+            "score": 0.4332
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-a-account",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.8342
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "异常转账",
+            "score": 0.5688
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "流水核验",
+            "score": 0.5459
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "资金异常",
+            "score": 0.4983
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "注册资本",
+            "score": 0.417
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-credit",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "失信处置",
+            "score": 0.7574
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.5116
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "资金核验",
+            "score": 0.4624
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "收款账户",
+            "score": 0.3947
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "流水期限",
+            "score": 0.3745
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-exit",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.851
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "失信处置",
+            "score": 0.5898
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "履约要求",
+            "score": 0.5513
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "收款账户",
+            "score": 0.452
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "资金核验",
+            "score": 0.3571
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-prepayment",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "预付款上限",
+            "score": 0.8928
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "履约要求",
+            "score": 0.5226
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "收款账户",
+            "score": 0.484
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.44
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "关联交易",
+            "score": 0.4372
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-related",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "关联交易",
+            "score": 0.905
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "资金核验",
+            "score": 0.6258
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "预付款上限",
+            "score": 0.5051
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "流水期限",
+            "score": 0.4542
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "收款账户",
+            "score": 0.4302
+          }
+        ],
+        "passed": true
+      }
+    ],
+    "recallAt5": 1
+  },
+  "risk": {
+    "cases": [
+      {
+        "id": "risk-high-one-pass",
+        "status": "waiting_approval",
+        "iterations": 1,
+        "durationMs": 6954.17,
+        "evidenceValidity": 1,
+        "citationAccuracy": 1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-normal-one-pass",
+        "status": "completed",
+        "iterations": 1,
+        "durationMs": 3069.17,
+        "evidenceValidity": 1,
+        "citationAccuracy": -1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-supplemental-loop",
+        "status": "waiting_approval",
+        "iterations": 2,
+        "durationMs": 5774.35,
+        "evidenceValidity": 1,
+        "citationAccuracy": 1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-bounded-tool-failure",
+        "status": "waiting_input",
+        "iterations": 3,
+        "durationMs": 5775.27,
+        "evidenceValidity": 1,
+        "citationAccuracy": -1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-approved-writeback",
+        "status": "completed",
+        "iterations": 1,
+        "durationMs": 6131.97,
+        "evidenceValidity": 1,
+        "citationAccuracy": 1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      }
+    ],
+    "taskSuccessRate": 1,
+    "evidenceValidity": 1,
+    "citationAccuracy": 1,
+    "duplicateSideEffects": 0,
+    "p50DurationMs": 5775.27,
+    "p95DurationMs": 6954.17
+  },
+  "security": {
+    "cases": [
+      {
+        "id": "attack-a-query-b-policy",
+        "leaks": 0,
+        "passed": true
+      },
+      {
+        "id": "attack-b-query-a-policy",
+        "leaks": 0,
+        "passed": true
+      },
+      {
+        "id": "attack-permission-escalation",
+        "leaks": 0,
+        "passed": true
+      }
+    ],
+    "tenantLeakage": 0
+  },
+  "usage": {
+    "calls": [
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 148.92,
+        "inputTokens": 102,
+        "outputTokens": 0,
+        "totalTokens": 102
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 73.57,
+        "inputTokens": 85,
+        "outputTokens": 0,
+        "totalTokens": 85
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 66.92,
+        "inputTokens": 84,
+        "outputTokens": 0,
+        "totalTokens": 84
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 75.26,
+        "inputTokens": 68,
+        "outputTokens": 0,
+        "totalTokens": 68
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 65.17,
+        "inputTokens": 12,
+        "outputTokens": 0,
+        "totalTokens": 12
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 62.15,
+        "inputTokens": 10,
+        "outputTokens": 0,
+        "totalTokens": 10
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 70.4,
+        "inputTokens": 9,
+        "outputTokens": 0,
+        "totalTokens": 9
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 56.9,
+        "inputTokens": 9,
+        "outputTokens": 0,
+        "totalTokens": 9
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 71.14,
+        "inputTokens": 10,
+        "outputTokens": 0,
+        "totalTokens": 10
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 61.36,
+        "inputTokens": 9,
+        "outputTokens": 0,
+        "totalTokens": 9
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 81.28,
+        "inputTokens": 10,
+        "outputTokens": 0,
+        "totalTokens": 10
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 66.49,
+        "inputTokens": 9,
+        "outputTokens": 0,
+        "totalTokens": 9
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 61.51,
+        "inputTokens": 16,
+        "outputTokens": 0,
+        "totalTokens": 16
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 61.86,
+        "inputTokens": 13,
+        "outputTokens": 0,
+        "totalTokens": 13
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 70.12,
+        "inputTokens": 11,
+        "outputTokens": 0,
+        "totalTokens": 11
+      },
+      {
+        "operation": "risk.risk-high-one-pass",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1829.22,
+        "inputTokens": 298,
+        "outputTokens": 81,
+        "totalTokens": 379
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 71.92,
+        "inputTokens": 8,
+        "outputTokens": 0,
+        "totalTokens": 8
+      },
+      {
+        "operation": "risk.risk-high-one-pass",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 4374.35,
+        "inputTokens": 1385,
+        "outputTokens": 287,
+        "totalTokens": 1672
+      },
+      {
+        "operation": "risk.risk-normal-one-pass",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 2032.97,
+        "inputTokens": 298,
+        "outputTokens": 109,
+        "totalTokens": 407
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 70.02,
+        "inputTokens": 8,
+        "outputTokens": 0,
+        "totalTokens": 8
+      },
+      {
+        "operation": "risk.risk-normal-one-pass",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 616.51,
+        "inputTokens": 1410,
+        "outputTokens": 5,
+        "totalTokens": 1415
+      },
+      {
+        "operation": "risk.risk-supplemental-loop",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1528.85,
+        "inputTokens": 298,
+        "outputTokens": 72,
+        "totalTokens": 370
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 66.81,
+        "inputTokens": 8,
+        "outputTokens": 0,
+        "totalTokens": 8
+      },
+      {
+        "operation": "risk.risk-supplemental-loop",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1420.98,
+        "inputTokens": 318,
+        "outputTokens": 62,
+        "totalTokens": 380
+      },
+      {
+        "operation": "risk.risk-supplemental-loop",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 2371.02,
+        "inputTokens": 1404,
+        "outputTokens": 138,
+        "totalTokens": 1542
+      },
+      {
+        "operation": "risk.risk-bounded-tool-failure",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1873.65,
+        "inputTokens": 298,
+        "outputTokens": 74,
+        "totalTokens": 372
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 73.78,
+        "inputTokens": 8,
+        "outputTokens": 0,
+        "totalTokens": 8
+      },
+      {
+        "operation": "risk.risk-bounded-tool-failure",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1837.42,
+        "inputTokens": 318,
+        "outputTokens": 62,
+        "totalTokens": 380
+      },
+      {
+        "operation": "risk.risk-bounded-tool-failure",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1532.44,
+        "inputTokens": 318,
+        "outputTokens": 72,
+        "totalTokens": 390
+      },
+      {
+        "operation": "risk.risk-approved-writeback",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 1704.19,
+        "inputTokens": 298,
+        "outputTokens": 78,
+        "totalTokens": 376
+      },
+      {
+        "operation": "knowledge.embedding",
+        "endpoint": "embeddings",
+        "model": "text-embedding-v4",
+        "status": "completed",
+        "durationMs": 66.62,
+        "inputTokens": 8,
+        "outputTokens": 0,
+        "totalTokens": 8
+      },
+      {
+        "operation": "risk.risk-approved-writeback",
+        "endpoint": "chat_completions",
+        "model": "qwen3.7-max",
+        "status": "completed",
+        "durationMs": 3976.08,
+        "inputTokens": 1398,
+        "outputTokens": 267,
+        "totalTokens": 1665
+      }
+    ],
+    "inputTokens": 8041,
+    "outputTokens": 1307,
+    "embeddingTokens": 497,
+    "totalTokens": 9845,
+    "estimatedCostCny": 0.143793,
+    "ratesCnyPerMillion": {
+      "modelInput": 12,
+      "modelOutput": 36,
+      "embeddingInput": 0.5
+    }
+  },
+  "thresholds": {
+    "retrievalRecallAt5": true,
+    "citationAccuracy": true,
+    "evidenceValidity": true,
+    "tenantLeakage": true,
+    "duplicateSideEffects": true
+  },
+  "overallPassed": true,
+  "limitations": [
+    "This E1 baseline uses a small 8/5/3 dataset and must not be presented as the final 30/20/10 benchmark.",
+    "Cost is estimated from configured unit rates; the Bailian billing console remains the billing source of truth.",
+    "Recovery fault injection and three-run variance are deferred to E2."
+  ]
+}

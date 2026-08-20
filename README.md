@@ -178,6 +178,8 @@ pnpm eval:m2:real
 
 E1 使用临时 PostgreSQL 数据库和临时 Qdrant Collection，结束后自动清理；报告包含真实检索、Agent 质量、P50/P95、Token 和按 `.env` 单价估算的费用。当前数据规模仍是 8 个检索问题、5 个真实模型案件和 3 个攻击样例，未达到最终简历指标门槛。
 
+首个 E1 小样本基线绑定 Git `25b5106`：Recall@5、引用准确率、证据有效率和任务成功率均为 100%，租户泄漏与重复副作用均为 0，Agent P50/P95 为 5.78s/6.95s，9845 Token，估算费用 CNY 0.143793。完整结果见 [`evals/reports/latest.real.md`](evals/reports/latest.real.md)。
+
 先发布一版租户制度并完成索引：
 
 ```bash
