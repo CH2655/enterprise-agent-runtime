@@ -4,8 +4,8 @@
 
 ## Run Metadata
 
-- Generated: 2026-08-20T04:07:27.266Z
-- Git revision: `70b3633-dirty`
+- Generated: 2026-08-20T04:09:39.663Z
+- Git revision: `94ac966`
 - Mode: `deterministic`
 - Datasets: `retrieval.v1`, `risk-cases.v1`, `tenant-attacks.v1`
 
@@ -39,12 +39,12 @@ Overall: **PASS**
 
 | Case | Status | Iterations | Duration | Result |
 | --- | --- | ---: | ---: | --- |
-| risk-high-one-pass | waiting_approval | 1 | 119.72 ms | PASS |
-| risk-normal-one-pass | completed | 1 | 117.49 ms | PASS |
-| risk-supplemental-loop | waiting_approval | 2 | 144.88 ms | PASS |
-| risk-bounded-tool-failure | waiting_input | 3 | 145.9 ms | PASS |
-| risk-approved-writeback | completed | 1 | 143.58 ms | PASS |
-| risk-invalid-plan | waiting_input | 0 | 84.17 ms | PASS |
+| risk-high-one-pass | waiting_approval | 1 | 121.97 ms | PASS |
+| risk-normal-one-pass | completed | 1 | 119.03 ms | PASS |
+| risk-supplemental-loop | waiting_approval | 2 | 146.15 ms | PASS |
+| risk-bounded-tool-failure | waiting_input | 3 | 147.96 ms | PASS |
+| risk-approved-writeback | completed | 1 | 144.9 ms | PASS |
+| risk-invalid-plan | waiting_input | 0 | 89.25 ms | PASS |
 
 ## Tenant Attack Cases
 
