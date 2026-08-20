@@ -26,6 +26,36 @@ describeWithDatabase("PostgreSQL Knowledge Outbox", () => {
     await Promise.all(closeCallbacks.splice(0).map((close) => close()));
   });
 
+  it("连续入库后应立即批量领取全部索引任务", async () => {
+    const connection = createDatabaseConnection(databaseUrl!);
+    closeCallbacks.push(connection.close);
+    const repository = new PostgresKnowledgeRepository(connection.db);
+    const ingestion = new KnowledgeIngestionService(repository);
+    const worker = new KnowledgeIndexWorker(
+      repository,
+      new DeterministicEmbeddingProvider(32),
+      new InMemoryVectorIndex(),
+    );
+    const suffix = randomUUID();
+    const documents = [];
+    for (const [index, title] of ["供应商准入制度", "资金核验制度"].entries()) {
+      documents.push(await ingestion.ingest({
+        tenantId: `tenant-batch-${suffix}`,
+        userId: "admin-batch",
+        documentKey: `policy-${index}-${suffix}`,
+        version: 1,
+        title,
+        content: `# ${title}\n连续入库后必须能够立即参与索引。`,
+        permissionTags: [],
+      }));
+    }
+
+    const result = await worker.runOnce(10);
+
+    expect(result.failed).toEqual([]);
+    expect(new Set(result.indexed)).toEqual(new Set(documents.map((document) => document.id)));
+  });
+
   it("索引失败后应保留Outbox并在下一轮重试成功", async () => {
     const connection = createDatabaseConnection(databaseUrl!);
     closeCallbacks.push(connection.close);

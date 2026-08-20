@@ -33,7 +33,7 @@ import type {
   ToolAuditSink,
   ToolIdempotencyStore,
 } from "@ear/tool-registry";
-import { and, asc, desc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import type { AgentDatabase } from "./index.js";
 import {
   agentEvents,
@@ -170,8 +170,6 @@ export class PostgresKnowledgeRepository implements KnowledgeRepository {
   }
 
   async claimIndexJobs(limit: number): Promise<KnowledgeOutboxRecord[]> {
-    const now = new Date();
-    const staleLock = new Date(now.getTime() - 5 * 60_000).toISOString();
     return this.db.transaction(async (tx) => {
       const rows = await tx
         .select()
@@ -184,11 +182,11 @@ export class PostgresKnowledgeRepository implements KnowledgeRepository {
                   eq(knowledgeOutbox.status, "pending"),
                   eq(knowledgeOutbox.status, "failed"),
                 ),
-                lte(knowledgeOutbox.availableAt, now.toISOString()),
+                sql`${knowledgeOutbox.availableAt} <= now()`,
               ),
               and(
                 eq(knowledgeOutbox.status, "processing"),
-                lte(knowledgeOutbox.lockedAt, staleLock),
+                sql`${knowledgeOutbox.lockedAt} <= now() - interval '5 minutes'`,
               ),
             ),
           ),
