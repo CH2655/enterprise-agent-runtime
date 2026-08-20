@@ -128,9 +128,13 @@ tenant-a 和 tenant-b 写入内容冲突的制度条款。任一租户检索结�
 
 RN 客户端订阅 Run 后切后台，期间产生事件；恢复前台后从最后 sequence 补发，不重复创建任务或展示重复事件。
 
+当前状态：SDK 契约已通过。自动化测试覆盖后台断开、前台补发、重复事件去重、持久化恢复和不重复创建；RNModules 页面示例待接入。
+
 ### AC-REUSE-01 第二 Agent
 
 Contract Agent 能注册、运行、产生 Evidence、暂停审批和完成写回；实现过程中不修改 Runtime 的业务无关接口，不复制 Event Store 和审批内核。
+
+当前状态：已通过。API 自动化测试覆盖注册、运行、Evidence/Finding、审批、事件和幂等写回，未修改 Runtime 与 Event Store 接口；Web 通用列表、时间线和审批可展示两个 Agent。
 
 ## 5. 评测验收
 

@@ -33,6 +33,7 @@
     "@langchain/langgraph-checkpoint-postgres": "^1.0.4",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "drizzle-orm": "^0.45.2",
+    "eventsource-parser": "^4.0.0",
     "fastify": "5.11.3",
     "pg": "^8.23.0",
     "zod": "4.4.3"

@@ -23,6 +23,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@types/pg@8.23.1)(pg@8.23.0)
+      eventsource-parser:
+        specifier: ^4.0.0
+        version: 4.0.0
       fastify:
         specifier: 5.11.3
         version: 5.11.3
@@ -1070,6 +1073,10 @@ packages:
   eventsource-parser@3.1.1:
     resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==, tarball: https://registry.npmmirror.com/eventsource-parser/-/eventsource-parser-3.1.1.tgz}
     engines: {node: '>=18.0.0'}
+
+  eventsource-parser@4.0.0:
+    resolution: {integrity: sha512-aIpvYxbqTx4KYWw73KpCt1Rh22tEAJ144F1qR76CT3Ex+LNMEPKf5HFrK5Yz9fMP1EVT0GrfA35VZvWQhMPuSQ==, tarball: https://registry.npmmirror.com/eventsource-parser/-/eventsource-parser-4.0.0.tgz}
+    engines: {node: '>=22.12'}
 
   eventsource@3.0.2:
     resolution: {integrity: sha512-YolzkJNxsTL3tCJMWFxpxtG2sCjbZ4LQUBUrkdaJK0ub0p6lmJt+2+1SwhKjLc652lpH9L/79Ptez972H9tphw==, tarball: https://registry.npmmirror.com/eventsource/-/eventsource-3.0.2.tgz}
@@ -2607,6 +2614,8 @@ snapshots:
   eventemitter3@5.0.4: {}
 
   eventsource-parser@3.1.1: {}
+
+  eventsource-parser@4.0.0: {}
 
   eventsource@3.0.2:
     dependencies:

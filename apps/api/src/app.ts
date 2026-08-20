@@ -20,6 +20,7 @@ import {
   type VectorIndex,
 } from "@ear/retrieval";
 import { createRiskAgentDefinition, registerMockPaasTools } from "@ear/risk-agent";
+import { createContractAgentDefinition, registerContractTools } from "@ear/contract-agent";
 import { ToolAuthorizationError, ToolRegistry } from "@ear/tool-registry";
 import fastifyJwt from "@fastify/jwt";
 import Fastify, { type FastifyRequest } from "fastify";
@@ -113,10 +114,12 @@ export function createApp(options: CreateAppOptions = {}) {
   registerMockPaasTools(tools, {
     ...(options.useKnowledgeSearchTool ? { knowledgeSearch } : {}),
   });
+  registerContractTools(tools);
   const agents = new AgentRegistry();
   agents.register(
     createRiskAgentDefinition(infrastructure.checkpointer, options.modelProvider),
   );
+  agents.register(createContractAgentDefinition());
   const runtime = new AgentRuntime(agents, tools, events, infrastructure.runs);
   let knowledgeIndexTimer: NodeJS.Timeout | undefined;
 
@@ -266,8 +269,8 @@ async function identityFrom(request: FastifyRequest, auth: AppAuthOptions) {
   return AgentIdentitySchema.parse({
     tenantId: request.headers["x-demo-tenant"],
     userId: request.headers["x-demo-user"],
-    roles: ["risk_reviewer"],
-    scopes: ["risk:read", "risk:approve", "risk:write", "knowledge:read", "knowledge:write"],
+    roles: ["risk_reviewer", "contract_reviewer"],
+    scopes: ["risk:read", "risk:approve", "risk:write", "contract:read", "contract:approve", "contract:write", "knowledge:read", "knowledge:write"],
   });
 }
 

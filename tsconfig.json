@@ -23,7 +23,9 @@
       "@ear/retrieval": ["packages/retrieval/src/index.ts"],
       "@ear/paas-metadata": ["packages/paas-metadata/src/index.ts"],
       "@ear/paas-mcp-server": ["mcp-servers/paas-tools/src/index.ts"],
-      "@ear/risk-agent": ["agents/risk-agent/src/index.ts"]
+      "@ear/rn-agent-sdk": ["packages/rn-agent-sdk/src/index.ts"],
+      "@ear/risk-agent": ["agents/risk-agent/src/index.ts"],
+      "@ear/contract-agent": ["agents/contract-agent/src/index.ts"]
     }
   },
   "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "agents/**/*.ts", "mcp-servers/**/*.ts", "evals/**/*.ts", "__tests__/**/*.ts", "drizzle.config.ts", "vitest.config.ts"]

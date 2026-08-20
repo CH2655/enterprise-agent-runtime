@@ -27,6 +27,8 @@
 - PaaS 元数据工具编译器：依据字段类型、必填、只读、字段权限和敏感策略生成 get/create/update Tool Schema。
 - 官方 MCP TypeScript SDK 适配层：只有显式授权工具可暴露，`tools/call` 仍统一进入 Tool Registry。
 - 脱敏供应商快照与 stdio MCP 示例，读取时掩码银行账号、删除禁止字段，写入时拒绝只读和敏感字段。
+- 框架无关 RN Agent SDK：JWT HTTP、标准 SSE 解析、sequence 补发去重、App 生命周期暂停/恢复和游标持久化。
+- 合同条款合规 Agent：复用同一 Run、元数据工具、Evidence、Finding、审批、事件和幂等写回内核。
 - Evidence 与 Finding 引用校验，Finding 不能引用不存在的 Evidence ID。
 - PostgreSQL 持久化 Run、Event、Approval、Evidence、Finding、Tool Invocation 和 Idempotency；事件 sequence 由数据库事务分配。
 - LangGraph `interrupt()` + PostgreSQL checkpointer，服务重建后可恢复等待审批的 Run。
@@ -67,7 +69,7 @@
 - 文档解析当前支持 Markdown 章节和行号，不包含 PDF/OCR。
 - Qdrant 适配器有协议级自动化测试；尚未建立真实 Qdrant 容器的持续集成和检索质量基线。
 - PaaS 元数据编译与 MCP 治理路径已经实现，但真实 PaaS 元数据导出接口、权限服务和业务 API Gateway 尚未接入。
-- 只有 Risk Agent 和 Web 客户端；RN SDK 和第二业务 Agent 尚未完成。
+- RN SDK 核心、合同 Agent 和双 Agent 通用工作台展示已实现，但 RNModules 页面适配和合同专属创建表单尚未完成。
 - Web 异步启动目前使用进程内调度；API 在返回 `running` 后立刻崩溃时，缺少持久化执行队列自动接管该 Run。
 
 ## 架构原则
@@ -106,6 +108,8 @@ PostgreSQL 保存 Run、checkpoint、事件、Evidence、审批和审计事实�
 - [实施里程碑](docs/milestones.md)
 - [验收标准](docs/acceptance-criteria.md)
 - [PaaS 元数据到 Tool 映射](docs/paas-metadata-tool-mapping.md)
+- [React Native Agent SDK 接入](docs/rn-agent-sdk-integration.md)
+- [合同合规 Agent 复用证明](docs/contract-agent-reuse.md)
 
 ## 项目结构
 
@@ -113,6 +117,7 @@ PostgreSQL 保存 Run、checkpoint、事件、Evidence、审批和审计事实�
 apps/api/                  Fastify API 与依赖装配
 apps/web/                  React/Vite 风控工作台与 SSE 事件投影
 agents/risk-agent/         风控业务工作流和 Mock 工具
+agents/contract-agent/     合同条款合规与平台复用验证
 packages/domain/           Evidence、Finding、Run 状态等契约
 packages/agent-runtime/    Agent 注册、Run 和审批入口
 packages/tool-registry/    工具治理、幂等、超时和审计
@@ -122,13 +127,14 @@ packages/persistence/      Drizzle Schema、PostgreSQL Repository 和审计
 packages/model-provider/   结构化模型契约、离线实现和 OpenAI Provider
 packages/retrieval/        文档分块、Embedding 编排、Outbox Worker 与 Qdrant 适配
 packages/paas-metadata/    PaaS 有效元数据校验与 Tool Schema 编译
+packages/rn-agent-sdk/     JWT、Run、SSE 补发与 RN 生命周期恢复
 mcp-servers/paas-tools/    官方 MCP SDK 协议适配与 stdio 演示
 evals/                     版本化数据集、E0 运行器、指标和评测报告
 __tests__/                 工作流与平台包测试
 docs/                      PRD、架构、ADR、里程碑与验收
 ```
 
-目标结构会在后续 M3 任务中增加 `packages/rn-agent-sdk` 和 `agents/contract-agent`。
+后续 M3 任务将在 RNModules 中增加移动审批示例，并补齐合同专属工作台视图。
 
 ## 本地运行
 
@@ -257,7 +263,7 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
 - M2：已完成；业务闭环与 E2 三轮验收规模真实评测已固化。
-- M3：进行中；PaaS 元数据工具和 MCP 已完成，RN SDK 和第二 Agent 待实现。
+- M3：进行中；PaaS 元数据工具、MCP、RN SDK 核心和合同 Agent 已完成，RNModules 示例与合同工作台待实现。
 - M4：评测固化与面试交付。
 
 只有通过对应[验收标准](docs/acceptance-criteria.md)的能力，才能进入简历成果描述。

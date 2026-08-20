@@ -56,6 +56,48 @@ describe("Run List API", () => {
       expect(run.status).toBe("waiting_approval");
     });
   });
+
+  it("合同Agent应复用通用Run、Evidence、审批和事件协议", async () => {
+    const { app } = createApp();
+    apps.push(app);
+    await app.ready();
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/runs",
+      headers: demoHeaders("tenant-a"),
+      payload: {
+        agentId: "contract-agent",
+        input: { contractId: "CON-001", supplierCode: "SUP-001" },
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({
+      agentId: "contract-agent",
+      status: "waiting_approval",
+      state: { evidence: expect.any(Array), findings: expect.any(Array) },
+    });
+    const approved = await app.inject({
+      method: "POST",
+      url: `/api/runs/${created.json().id}/approve`,
+      headers: demoHeaders("tenant-a"),
+    });
+    expect(approved.statusCode).toBe(200);
+    expect(approved.json()).toMatchObject({
+      status: "completed",
+      state: {
+        writeBack: { taskId: "contract-review-CON-001", created: true },
+      },
+    });
+    const events = await app.inject({
+      method: "GET",
+      url: `/api/runs/${created.json().id}/events?after=0`,
+      headers: demoHeaders("tenant-a"),
+    });
+    expect(events.json().map((item: { type: string }) => item.type)).toEqual(
+      expect.arrayContaining(["evidence.added", "approval.required", "run.completed"]),
+    );
+  });
 });
 
 async function createRun(

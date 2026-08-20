@@ -22,7 +22,7 @@ import { useMemo, useState } from "react";
 import { approveRun, getRun } from "../api";
 import { useRunEvents } from "../hooks/use-run-events";
 import { useEventStore } from "../stores/event-store";
-import type { AgentEvent, DemoIdentity, EvidenceRecord, RiskFinding } from "../types";
+import { presentRun, type AgentEvent, type DemoIdentity, type EvidenceRecord, type RiskFinding } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
 export function RunDetail({ runId, identity }: { runId: string; identity: DemoIdentity }) {
@@ -70,17 +70,18 @@ export function RunDetail({ runId, identity }: { runId: string; identity: DemoId
   }
   const run = runQuery.data!;
   const state = run.state;
+  const presentation = presentRun(run);
 
   return (
     <div className="run-detail">
       <div className="detail-header">
         <div className="detail-title">
           <div className="detail-title-line">
-            <h1>{run.input.caseId}</h1>
+            <h1>{presentation.title}</h1>
             <StatusBadge status={run.status} />
           </div>
           <div className="detail-meta">
-            <span>{run.input.projectCode}</span><ArrowRight size={14} /><span>{run.input.supplierCode}</span>
+            <span>{presentation.parties[0]}</span><ArrowRight size={14} /><span>{presentation.parties[1]}</span>
             <span className="meta-separator" />
             <span>{formatDateTime(run.createdAt)}</span>
           </div>
@@ -183,13 +184,13 @@ export function RunDetail({ runId, identity }: { runId: string; identity: DemoId
         <div className="dialog-backdrop" role="presentation" onMouseDown={() => setApprovalOpen(false)}>
           <section className="dialog-panel approval-dialog" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
             <div className="dialog-header">
-              <div><span className="dialog-icon approval"><BadgeCheck size={20} /></span><div><h2>确认风险处置</h2><p>{run.input.caseId}</p></div></div>
+              <div><span className="dialog-icon approval"><BadgeCheck size={20} /></span><div><h2>{presentation.approvalTitle}</h2><p>{presentation.title}</p></div></div>
               <button className="icon-button" type="button" title="关闭" onClick={() => setApprovalOpen(false)}><X size={19} /></button>
             </div>
             <div className="approval-summary">
-              <div><span>风险发现</span><strong>{state.findings?.length ?? 0} 项</strong></div>
-              <div><span>后续动作</span><strong>创建整改任务</strong></div>
-              <div><span>幂等键</span><code>{run.id.slice(0, 8)}:rectification</code></div>
+              <div><span>{presentation.findingLabel}</span><strong>{state.findings?.length ?? 0} 项</strong></div>
+              <div><span>后续动作</span><strong>{presentation.actionLabel}</strong></div>
+              <div><span>幂等键</span><code>{run.id.slice(0, 8)}:writeback</code></div>
             </div>
             {approveMutation.isError && <div className="inline-error">{approveMutation.error.message}</div>}
             <div className="dialog-actions">

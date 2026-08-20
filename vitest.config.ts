@@ -18,7 +18,9 @@ export default defineConfig({
       "@ear/retrieval": source("./packages/retrieval/src/index.ts"),
       "@ear/paas-metadata": source("./packages/paas-metadata/src/index.ts"),
       "@ear/paas-mcp-server": source("./mcp-servers/paas-tools/src/index.ts"),
+      "@ear/rn-agent-sdk": source("./packages/rn-agent-sdk/src/index.ts"),
       "@ear/risk-agent": source("./agents/risk-agent/src/index.ts"),
+      "@ear/contract-agent": source("./agents/contract-agent/src/index.ts"),
     },
   },
   test: {

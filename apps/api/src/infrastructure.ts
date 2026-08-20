@@ -76,5 +76,8 @@ function createDevelopmentObjectPermissionPolicy(): ObjectPermissionPolicy {
     { appName: "std", metaName: "supplier", action: "view_finance_summary" },
     { appName: "knowledge", metaName: "supplier_policy", action: "view" },
     { appName: "std", metaName: "rectification_task", action: "create" },
+    { appName: "std", metaName: "Contract", action: "view" },
+    { appName: "knowledge", metaName: "contract_policy", action: "view" },
+    { appName: "std", metaName: "contract_review_task", action: "create" },
   ]);
 }

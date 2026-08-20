@@ -15,7 +15,7 @@ import { listRuns } from "./api";
 import { CreateRunDialog } from "./components/CreateRunDialog";
 import { RunDetail } from "./components/RunDetail";
 import { StatusBadge } from "./components/StatusBadge";
-import type { AgentRunSummary, DemoIdentity, RunStatus } from "./types";
+import { presentRun, type AgentRunSummary, type DemoIdentity, type RunStatus } from "./types";
 
 const STATUS_FILTERS: Array<{ label: string; value?: RunStatus }> = [
   { label: "全部" },
@@ -191,19 +191,20 @@ function TaskItem({
   selected: boolean;
   onSelect(): void;
 }) {
+  const presentation = presentRun(run);
   return (
     <button className={`task-item ${selected ? "selected" : ""}`} type="button" onClick={onSelect}>
       <div className="task-item-top">
-        <strong>{run.input.caseId}</strong>
+        <strong>{presentation.title}</strong>
         <StatusBadge status={run.status} />
       </div>
       <div className="task-parties">
-        <span>{run.input.projectCode}</span>
-        <span>{run.input.supplierCode}</span>
+        <span>{presentation.parties[0]}</span>
+        <span>{presentation.parties[1]}</span>
       </div>
       <div className="task-item-bottom">
         <span>{formatRelativeTime(run.updatedAt)}</span>
-        <span>{run.summary.evidenceCount} 证据 · {run.summary.findingCount} 风险</span>
+        <span>{run.summary.evidenceCount} 证据 · {run.summary.findingCount} 发现</span>
       </div>
     </button>
   );

@@ -13,6 +13,13 @@ export interface RiskCaseInput {
   supplierCode: string;
 }
 
+export interface ContractReviewInput {
+  contractId: string;
+  supplierCode: string;
+}
+
+export type AgentInput = RiskCaseInput | ContractReviewInput;
+
 export interface EvidenceRecord {
   id: string;
   category: string;
@@ -53,7 +60,7 @@ export interface AgentRun {
   tenantId: string;
   userId: string;
   status: RunStatus;
-  input: RiskCaseInput;
+  input: AgentInput;
   state: RiskAgentState;
   createdAt: string;
   updatedAt: string;
@@ -65,7 +72,7 @@ export interface AgentRunSummary {
   agentVersion: string;
   userId: string;
   status: RunStatus;
-  input: RiskCaseInput;
+  input: AgentInput;
   createdAt: string;
   updatedAt: string;
   summary: {
@@ -88,4 +95,25 @@ export interface DemoIdentity {
   tenantId: string;
   userId: string;
   token?: string;
+}
+
+export function presentRun(run: { agentId: string; input: AgentInput }) {
+  if (run.agentId === "contract-agent") {
+    const input = run.input as ContractReviewInput;
+    return {
+      title: input.contractId,
+      parties: ["合同合规审查", input.supplierCode],
+      approvalTitle: "确认合同复核",
+      actionLabel: "创建合同复核任务",
+      findingLabel: "合规发现",
+    };
+  }
+  const input = run.input as RiskCaseInput;
+  return {
+    title: input.caseId,
+    parties: [input.projectCode, input.supplierCode],
+    approvalTitle: "确认风险处置",
+    actionLabel: "创建整改任务",
+    findingLabel: "风险发现",
+  };
 }
