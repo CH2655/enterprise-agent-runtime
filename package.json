@@ -8,8 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx apps/api/src/main.ts",
-    "dev:api": "tsx apps/api/src/main.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx apps/api/src/main.ts",
+    "dev:api": "node --env-file-if-exists=.env --import tsx apps/api/src/main.ts",
     "dev:web": "pnpm --filter @ear/web dev",
     "build:web": "pnpm --filter @ear/web build",
     "db:generate": "drizzle-kit generate",
@@ -20,6 +20,8 @@
     "test": "vitest run",
     "test:integration": "vitest run __tests__/packages/persistence/runtime.integration.test.ts",
     "test:watch": "vitest",
+    "eval:m2": "node --import tsx evals/src/cli.ts --mode deterministic",
+    "eval:bailian:smoke": "node --env-file-if-exists=.env --import tsx evals/src/bailian-smoke.ts",
     "check": "pnpm typecheck && pnpm test"
   },
   "dependencies": {

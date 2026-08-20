@@ -2,7 +2,7 @@
 
 面向企业 PaaS 的多租户 Agent 执行与治理项目，以“项目风控与供应商准入尽调”为首个标杆业务，目标是让 AI 能够受控读取企业数据、生成可追溯结论、等待人工审批并安全回写业务系统。
 
-> 当前仓库已完成 M1 可靠 Runtime，并完成 M2 风控业务的后端与 Web 人机协作闭环：动态规划、知识检索、可定位 Evidence、任务列表、执行时间线和审批写回均已实现。MCP、RN SDK、第二 Agent 及真实模型/检索质量评测仍属于后续工作。
+> 当前仓库已完成 M1 可靠 Runtime，并完成 M2 风控业务的后端与 Web 人机协作闭环。E0 已建立版本化评测集、确定性运行器和指标报告；真实百炼模型、真实 Qdrant 质量基线仍属于后续工作。
 
 ## 产品闭环
 
@@ -34,7 +34,7 @@
 - Run 状态转换与 Run 更新在同一事务提交，记录前后状态、操作者、原因和时间，并提供租户隔离的查询 API。
 - Tool Registry 在工具执行前按 RNModules/PaaS 的 `appName + metaName + action + objectId` 语义校验对象权限。
 - API 启动时自动扫描“审批已完成但 Run 未结束”的记录，从持久化 checkpoint 校准或恢复执行。
-- Model Provider 契约、可脚本化确定性实现和 OpenAI Responses API Structured Outputs 实现。
+- Model Provider 契约、可脚本化确定性实现、OpenAI Responses Structured Outputs 和百炼 Chat Completions JSON Mode 实现。
 - 受约束动态 Loop：`plan -> collect -> evaluate -> replan`，只允许只读工具、最多三轮、成功工具不重复。
 - 模型生成候选 Finding，确定性代码继续负责工具白名单、参数构造、Evidence 引用校验和写操作审批。
 - 未配置模型 Key 时使用离线确定性 Provider，完整流程可重复测试。
@@ -49,6 +49,7 @@
 - Web 使用带身份 Header 的流式 `fetch` 消费 SSE；历史回放与实时事件按 `sequence` 去重，断线后从游标补发。
 - Web 创建 Run 使用异步模式立即返回 `running`；同步模式继续保留给测试和内部调用。
 - Demo 模式自动为两个租户建立内容冲突的制度，便于验证向量检索隔离。
+- E0 评测运行器覆盖 6 个风控路径、8 个制度问题和 3 个越权样例，输出 JSON/Markdown 可追溯报告。
 - 自动化测试覆盖重启恢复、审批并发、崩溃窗口、动态补取、非法计划、有界终止、跨租户检索、版本切换、Outbox 重试和 Evidence 定位。
 
 ## 当前限制
@@ -59,7 +60,7 @@
 - 事件与 Run 创建、Run 状态与 Evidence/Finding 保存尚未合并为单个业务事务，故障后需要校准。
 - 对象权限接口与规则适配器已经实现，真实 PaaS 权限服务客户端尚未接入。
 - “最多一次业务副作用”依赖稳定幂等键和下游适配器遵守该键，不宣称分布式 exactly-once。
-- OpenAI Provider 已实现但未使用真实 Key 建立质量/延迟/成本基线；默认仍运行确定性 Provider。
+- OpenAI 兼容 Provider 已实现但未使用百炼 Key 建立质量/延迟/成本基线；默认仍运行确定性 Provider。
 - 项目、供应商、企业风险、流水和整改写回仍为 Mock；制度检索已经接入知识库。
 - 文档解析当前支持 Markdown 章节和行号，不包含 PDF/OCR。
 - Qdrant 适配器有协议级自动化测试；尚未建立真实 Qdrant 容器的持续集成和检索质量基线。
@@ -117,11 +118,12 @@ packages/auth/             JWT Claims 到可信 IdentityContext
 packages/persistence/      Drizzle Schema、PostgreSQL Repository 和审计
 packages/model-provider/   结构化模型契约、离线实现和 OpenAI Provider
 packages/retrieval/        文档分块、Embedding 编排、Outbox Worker 与 Qdrant 适配
+evals/                     版本化数据集、E0 运行器、指标和评测报告
 __tests__/                 工作流与平台包测试
 docs/                      PRD、架构、ADR、里程碑与验收
 ```
 
-目标结构会在对应里程碑实施时增加 `apps/web`、`packages/rn-agent-sdk` 和 `mcp-servers/paas-tools`。
+目标结构会在对应里程碑实施时增加 `packages/rn-agent-sdk` 和 `mcp-servers/paas-tools`。
 
 ## 本地运行
 
@@ -129,6 +131,7 @@ docs/                      PRD、架构、ADR、里程碑与验收
 
 ```bash
 pnpm install
+cp .env.example .env
 pnpm check
 pnpm dev:api
 pnpm dev:web
@@ -146,7 +149,25 @@ TEST_DATABASE_URL=postgresql://ear:ear_dev@127.0.0.1:5434/ear pnpm test:integrat
 
 PostgreSQL 默认监听 `127.0.0.1:5434`，Qdrant 默认监听 `127.0.0.1:6333`，配置示例见 `.env.example`。设置 `DATABASE_URL` 后 API 自动装配 PostgreSQL Repository 与 `PostgresSaver`；设置 `QDRANT_URL` 后使用 Qdrant，否则使用内存向量索引。
 
-默认使用确定性 Model Provider。配置 `OPENAI_API_KEY` 与显式 `OPENAI_MODEL` 后，API 使用 Responses API Structured Outputs；模型仍不能直接执行工具或构造写操作参数。
+API 启动脚本会读取根目录 `.env`。默认使用确定性 Model Provider；配置百炼 API Key、业务空间 Base URL 与显式模型名后，API 使用 Chat Completions JSON Mode、关闭思考并继续执行 Zod 校验。`MODEL_WIRE_API` 可显式选择 `chat_completions` 或 `responses`，百炼域名未配置该变量时自动选择前者。模型仍不能直接执行工具或构造写操作参数。
+
+## M2 评测
+
+零费用运行 E0 确定性基线：
+
+```bash
+pnpm eval:m2
+```
+
+报告写入 `evals/reports/latest.deterministic.json` 和 `.md`。E0 用来验证评测计算、数据 Schema 和场景覆盖，结果不能作为真实模型质量或简历指标。
+
+确认 `.env` 配置后，可显式执行一次百炼 Embedding 与结构化输出冒烟调用：
+
+```bash
+pnpm eval:bailian:smoke
+```
+
+该命令会产生少量模型 Token 消耗，普通测试与 `pnpm eval:m2` 不会调用百炼。
 
 先发布一版租户制度并完成索引：
 
@@ -201,7 +222,7 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
-- M2：进行中；Model Provider、动态 Loop、RAG 后端、Web 工作台与事件投影已完成，真实质量评测待实现。
+- M2：进行中；业务闭环与 E0 评测骨架已完成，真实百炼/Qdrant 质量、延迟和成本基线待实现。
 - M3：PaaS 元数据工具、MCP、RN SDK 和第二 Agent。
 - M4：评测固化与面试交付。
 

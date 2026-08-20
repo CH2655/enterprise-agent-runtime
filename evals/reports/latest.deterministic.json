@@ -1,0 +1,437 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "deterministic",
+  "generatedAt": "2026-08-20T04:07:27.266Z",
+  "gitRevision": "70b3633-dirty",
+  "datasets": {
+    "retrieval": "retrieval.v1",
+    "risk": "risk-cases.v1",
+    "tenantAttacks": "tenant-attacks.v1"
+  },
+  "retrieval": {
+    "cases": [
+      {
+        "id": "ret-a-credit",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "失信复核",
+            "score": 0.7407
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "资金异常",
+            "score": 0.4587
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "异常转账",
+            "score": 0.3826
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.3296
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "流水核验",
+            "score": 0.3284
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-a-capital",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "注册资本",
+            "score": 0.6311
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "流水核验",
+            "score": 0.3652
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.3525
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "整改跟踪",
+            "score": 0.3355
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "失信复核",
+            "score": 0.2954
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-a-prepayment",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "预付款控制",
+            "score": 0.6421
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "失信复核",
+            "score": 0.3911
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "整改跟踪",
+            "score": 0.2789
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "资金异常",
+            "score": 0.2587
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.2414
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-a-account",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "账户一致性",
+            "score": 0.5794
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "预付款控制",
+            "score": 0.3285
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "finance-policy",
+            "section": "异常转账",
+            "score": 0.3083
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "失信复核",
+            "score": 0.2967
+          },
+          {
+            "tenantId": "tenant-a",
+            "documentKey": "supplier-policy",
+            "section": "整改跟踪",
+            "score": 0.2789
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-credit",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "失信处置",
+            "score": 0.7293
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "资金核验",
+            "score": 0.3641
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.2298
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "流水期限",
+            "score": 0.2241
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "履约要求",
+            "score": 0.219
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-exit",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.6656
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "失信处置",
+            "score": 0.4303
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "履约要求",
+            "score": 0.3708
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "关联交易",
+            "score": 0.2918
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "收款账户",
+            "score": 0.2537
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-prepayment",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "预付款上限",
+            "score": 0.7119
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "履约要求",
+            "score": 0.3705
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "失信处置",
+            "score": 0.3183
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "收款账户",
+            "score": 0.2695
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.2626
+          }
+        ],
+        "passed": true
+      },
+      {
+        "id": "ret-b-related",
+        "relevant": 1,
+        "retrievedRelevant": 1,
+        "recallAt5": 1,
+        "returned": [
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "finance-policy",
+            "section": "关联交易",
+            "score": 0.6977
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "资金核验",
+            "score": 0.2888
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "履约要求",
+            "score": 0.2885
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "失信处置",
+            "score": 0.284
+          },
+          {
+            "tenantId": "tenant-b",
+            "documentKey": "supplier-policy",
+            "section": "退出机制",
+            "score": 0.246
+          }
+        ],
+        "passed": true
+      }
+    ],
+    "recallAt5": 1
+  },
+  "risk": {
+    "cases": [
+      {
+        "id": "risk-high-one-pass",
+        "status": "waiting_approval",
+        "iterations": 1,
+        "durationMs": 119.72,
+        "evidenceValidity": 1,
+        "citationAccuracy": 1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-normal-one-pass",
+        "status": "completed",
+        "iterations": 1,
+        "durationMs": 117.49,
+        "evidenceValidity": 1,
+        "citationAccuracy": -1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-supplemental-loop",
+        "status": "waiting_approval",
+        "iterations": 2,
+        "durationMs": 144.88,
+        "evidenceValidity": 1,
+        "citationAccuracy": 1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-bounded-tool-failure",
+        "status": "waiting_input",
+        "iterations": 3,
+        "durationMs": 145.9,
+        "evidenceValidity": 1,
+        "citationAccuracy": -1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-approved-writeback",
+        "status": "completed",
+        "iterations": 1,
+        "durationMs": 143.58,
+        "evidenceValidity": 1,
+        "citationAccuracy": 1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      },
+      {
+        "id": "risk-invalid-plan",
+        "status": "waiting_input",
+        "iterations": 0,
+        "durationMs": 84.17,
+        "evidenceValidity": 1,
+        "citationAccuracy": -1,
+        "duplicateSideEffects": 0,
+        "passed": true,
+        "issues": []
+      }
+    ],
+    "taskSuccessRate": 1,
+    "evidenceValidity": 1,
+    "citationAccuracy": 1,
+    "duplicateSideEffects": 0,
+    "p50DurationMs": 119.72,
+    "p95DurationMs": 145.9
+  },
+  "security": {
+    "cases": [
+      {
+        "id": "attack-a-query-b-policy",
+        "leaks": 0,
+        "passed": true
+      },
+      {
+        "id": "attack-b-query-a-policy",
+        "leaks": 0,
+        "passed": true
+      },
+      {
+        "id": "attack-permission-escalation",
+        "leaks": 0,
+        "passed": true
+      }
+    ],
+    "tenantLeakage": 0
+  },
+  "thresholds": {
+    "retrievalRecallAt5": true,
+    "citationAccuracy": true,
+    "evidenceValidity": true,
+    "tenantLeakage": true,
+    "duplicateSideEffects": true
+  },
+  "overallPassed": true,
+  "limitations": [
+    "E0 uses deterministic embeddings and a scripted model; these are harness baselines, not resume quality claims.",
+    "Real PostgreSQL, Qdrant, Bailian model quality, token cost and recovery injection are measured in E1/E2.",
+    "The E0 dataset is intentionally small and must be expanded before M2 exits."
+  ]
+}

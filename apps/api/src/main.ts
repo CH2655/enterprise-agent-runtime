@@ -1,6 +1,7 @@
 import { createApp } from "./app.js";
 import { createPostgresInfrastructure } from "./infrastructure.js";
 import {
+  BailianChatCompletionsModelProvider,
   DeterministicEmbeddingProvider,
   OpenAIEmbeddingProvider,
   OpenAIResponsesModelProvider,
@@ -20,12 +21,24 @@ const auth = authMode === "jwt"
 const infrastructure = process.env.DATABASE_URL
   ? await createPostgresInfrastructure(process.env.DATABASE_URL)
   : undefined;
+const modelBaseUrl = process.env.OPENAI_BASE_URL;
+const modelWireApi = process.env.MODEL_WIRE_API ?? (
+  modelBaseUrl?.includes("maas.aliyuncs.com") || modelBaseUrl?.includes("dashscope.aliyuncs.com")
+    ? "chat_completions"
+    : "responses"
+);
 const modelProvider = process.env.OPENAI_API_KEY
-  ? new OpenAIResponsesModelProvider({
-      apiKey: process.env.OPENAI_API_KEY,
-      model: requiredEnvironment("OPENAI_MODEL"),
-      ...(process.env.OPENAI_BASE_URL ? { baseUrl: process.env.OPENAI_BASE_URL } : {}),
-    })
+  ? modelWireApi === "chat_completions"
+    ? new BailianChatCompletionsModelProvider({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: requiredEnvironment("OPENAI_MODEL"),
+        baseUrl: requiredEnvironment("OPENAI_BASE_URL"),
+      })
+    : new OpenAIResponsesModelProvider({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: requiredEnvironment("OPENAI_MODEL"),
+        ...(modelBaseUrl ? { baseUrl: modelBaseUrl } : {}),
+      })
   : undefined;
 const embeddingDimensions = Number(process.env.EMBEDDING_DIMENSIONS ?? 256);
 const embeddingProvider = process.env.OPENAI_API_KEY

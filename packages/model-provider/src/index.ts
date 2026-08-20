@@ -219,6 +219,86 @@ export class OpenAIResponsesModelProvider implements ModelProvider {
   }
 }
 
+export interface BailianChatCompletionsModelProviderOptions {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+}
+
+export class BailianChatCompletionsModelProvider implements ModelProvider {
+  private readonly baseUrl: string;
+  private readonly timeoutMs: number;
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(private readonly options: BailianChatCompletionsModelProviderOptions) {
+    this.baseUrl = options.baseUrl.replace(/\/$/, "");
+    this.timeoutMs = options.timeoutMs ?? 30_000;
+    this.fetchImpl = options.fetchImpl ?? fetch;
+  }
+
+  async generateStructured<TOutput>(
+    request: StructuredModelRequest<TOutput>,
+  ): Promise<TOutput> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const jsonSchema = z.toJSONSchema(request.schema);
+      const response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${this.options.apiKey}`,
+          "content-type": "application/json",
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.options.model,
+          messages: [
+            {
+              role: "system",
+              content: [
+                request.system,
+                "必须只输出符合下列 JSON Schema 的 JSON 对象，不要输出 Markdown 或额外解释。",
+                JSON.stringify(jsonSchema),
+              ].join("\n"),
+            },
+            { role: "user", content: JSON.stringify(request.input) },
+          ],
+          response_format: { type: "json_object" },
+          enable_thinking: false,
+        }),
+      });
+      const body = await readJsonResponse(response);
+      if (!response.ok) {
+        throw new ModelProviderRequestError(
+          `Bailian Chat Completions request failed (${response.status}): ${errorMessage(body)}`,
+        );
+      }
+      const output = chatCompletionOutput(body);
+      let raw: unknown;
+      try {
+        raw = JSON.parse(output);
+      } catch {
+        throw new ModelProviderOutputError(
+          `Bailian Chat Completions returned invalid JSON for ${request.task}.`,
+        );
+      }
+      return parseModelOutput(request.task, request.schema, raw);
+    } catch (error) {
+      if (error instanceof ModelProviderRequestError ||
+          error instanceof ModelProviderOutputError ||
+          error instanceof ModelProviderRefusalError) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ModelProviderRequestError(`Bailian Chat Completions request failed: ${message}`);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+}
+
 function parseModelOutput<TOutput>(
   task: string,
   schema: z.ZodType<TOutput>,
@@ -270,6 +350,18 @@ function responseOutput(body: unknown): string {
   }
   if (outputText) return outputText;
   throw new ModelProviderOutputError("Responses API returned no output_text content.");
+}
+
+function chatCompletionOutput(body: unknown): string {
+  const envelope = body as {
+    choices?: Array<{ message?: { content?: unknown; refusal?: string } }>;
+  };
+  const message = envelope.choices?.[0]?.message;
+  if (message?.refusal) throw new ModelProviderRefusalError(message.refusal);
+  if (typeof message?.content === "string" && message.content.length > 0) {
+    return message.content;
+  }
+  throw new ModelProviderOutputError("Bailian Chat Completions returned no message content.");
 }
 
 function errorMessage(body: unknown): string {

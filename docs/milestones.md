@@ -63,7 +63,7 @@
 
 ## M2：可演示的风控业务闭环
 
-**状态：进行中，业务与 Web 闭环已完成，真实质量评测待完成（2026-08-20）。**
+**状态：进行中，业务与 Web 闭环及 E0 评测骨架已完成，真实质量评测待完成（2026-08-20）。**
 
 ### 目标
 
@@ -82,7 +82,7 @@
 
 ### 当前进展
 
-- 已完成：通用结构化 Model Provider、确定性测试 Provider、OpenAI Responses API Provider。
+- 已完成：通用结构化 Model Provider、确定性测试 Provider、OpenAI Responses API Provider，以及关闭思考并执行 Zod 校验的百炼 Chat Completions Provider。
 - 已完成：`plan -> collect -> evaluate -> replan` 状态图，最多三轮，成功工具不重复。
 - 已完成：未知工具、写工具、无关工具和超预算计划由确定性策略拒绝并产生 `plan.rejected` 事件。
 - 已完成：模型生成候选 Finding，Evidence 引用仍由确定性节点校验。
@@ -92,7 +92,8 @@
 - 已完成：React/Vite 工作台、租户任务列表、URL Run 恢复、Finding/Evidence 展开、审批和整改结果。
 - 已完成：TanStack Query 服务端状态、Zustand 事件投影、SSE sequence 去重和断线游标补发。
 - 已完成：Web 异步创建 Run，浏览器可在同一协议上读取执行事件并恢复最终快照。
-- 待完成：真实模型、真实 Qdrant 和固定评测集的质量/延迟/成本报告。
+- 已完成：版本化 E0 数据集、确定性评测运行器、阈值门禁及 JSON/Markdown 报告；覆盖一次完成、补充 Loop、有界失败、非法计划、审批写回和租户攻击。
+- 待完成：将数据集扩展到验收规模，并使用真实百炼模型、PostgreSQL 和 Qdrant 生成质量/延迟/Token 成本报告。
 
 ### 明确不做
 

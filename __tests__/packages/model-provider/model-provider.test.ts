@@ -1,4 +1,5 @@
 import {
+  BailianChatCompletionsModelProvider,
   ModelProviderOutputError,
   OpenAIEmbeddingProvider,
   OpenAIResponsesModelProvider,
@@ -107,6 +108,43 @@ describe("Model Provider", () => {
         schema: ResultSchema,
       }),
     ).rejects.toThrow("request refused");
+  });
+
+  it("应通过百炼Chat Completions JSON Mode请求并继续执行Zod校验", async () => {
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '{"tools":["get_supplier_profile"]}' } }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const provider = new BailianChatCompletionsModelProvider({
+      apiKey: "test-key",
+      model: "qwen3.7-max",
+      baseUrl: "https://bailian.test/compatible-mode/v1/",
+      fetchImpl,
+    });
+
+    await expect(
+      provider.generateStructured({
+        task: "risk.plan",
+        system: "生成取证计划",
+        input: { missingCategories: ["supplier"] },
+        schemaName: "risk_plan",
+        schema: ResultSchema,
+      }),
+    ).resolves.toEqual({ tools: ["get_supplier_profile"] });
+    expect(fetchImpl.mock.calls[0]?.[0]).toBe(
+      "https://bailian.test/compatible-mode/v1/chat/completions",
+    );
+    const request = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body));
+    expect(request).toMatchObject({
+      model: "qwen3.7-max",
+      response_format: { type: "json_object" },
+      enable_thinking: false,
+    });
+    expect(request.messages[0].content).toContain("JSON Schema");
   });
 
   it("应批量请求Embedding并按响应index恢复输入顺序", async () => {
