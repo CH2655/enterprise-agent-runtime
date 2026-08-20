@@ -93,6 +93,7 @@
 - 已完成：TanStack Query 服务端状态、Zustand 事件投影、SSE sequence 去重和断线游标补发。
 - 已完成：Web 异步创建 Run，浏览器可在同一协议上读取执行事件并恢复最终快照。
 - 已完成：版本化 E0 数据集、确定性评测运行器、阈值门禁及 JSON/Markdown 报告；覆盖一次完成、补充 Loop、有界失败、非法计划、审批写回和租户攻击。
+- 已实现待实跑：E1 临时 PostgreSQL/Qdrant 隔离环境、百炼真实模型/Embedding 调用、Token/费用遥测和真实报告生成。
 - 待完成：将数据集扩展到验收规模，并使用真实百炼模型、PostgreSQL 和 Qdrant 生成质量/延迟/Token 成本报告。
 
 ### 明确不做

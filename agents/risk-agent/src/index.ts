@@ -355,6 +355,9 @@ function createRiskGraph(
           system: [
             "你是企业供应商风险分析器，只能依据给定 Evidence 生成结论。",
             "每条 Finding 必须引用存在的 evidenceIds，不得虚构业务事实。",
+            "dimension 只能使用“企业信用”或“资金稳定性”。",
+            "企业信用结论必须同时引用 enterprise-risk 与 policy 证据；资金稳定性结论必须同时引用 bank-statement 与 policy 证据。",
+            "没有对应风险事实时不要生成该维度 Finding。",
           ].join("\n"),
           input: { request: state.request, evidence: state.evidence, toolResults: state.toolResults },
           schemaName: "risk_findings",

@@ -21,6 +21,7 @@
     "test:integration": "vitest run __tests__/packages/persistence/runtime.integration.test.ts",
     "test:watch": "vitest",
     "eval:m2": "node --import tsx evals/src/cli.ts --mode deterministic",
+    "eval:m2:real": "node --env-file-if-exists=.env --import tsx evals/src/real-cli.ts",
     "eval:bailian:smoke": "node --env-file-if-exists=.env --import tsx evals/src/bailian-smoke.ts",
     "check": "pnpm typecheck && pnpm test"
   },

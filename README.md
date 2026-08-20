@@ -169,6 +169,15 @@ pnpm eval:bailian:smoke
 
 该命令会产生少量模型 Token 消耗，普通测试与 `pnpm eval:m2` 不会调用百炼。
 
+运行 E1 小样本真实基线：
+
+```bash
+pnpm db:up
+pnpm eval:m2:real
+```
+
+E1 使用临时 PostgreSQL 数据库和临时 Qdrant Collection，结束后自动清理；报告包含真实检索、Agent 质量、P50/P95、Token 和按 `.env` 单价估算的费用。当前数据规模仍是 8 个检索问题、5 个真实模型案件和 3 个攻击样例，未达到最终简历指标门槛。
+
 先发布一版租户制度并完成索引：
 
 ```bash

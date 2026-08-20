@@ -12,6 +12,7 @@
         "failTools": []
       },
       "approve": false,
+      "realFailToolAttempts": {},
       "expected": {
         "status": "waiting_approval",
         "iterations": 1,
@@ -35,6 +36,7 @@
         "failTools": []
       },
       "approve": false,
+      "realFailToolAttempts": {},
       "expected": {
         "status": "completed",
         "iterations": 1,
@@ -55,6 +57,7 @@
         "failTools": []
       },
       "approve": false,
+      "realFailToolAttempts": { "get_bank_statement_summary": 1 },
       "expected": {
         "status": "waiting_approval",
         "iterations": 2,
@@ -75,6 +78,7 @@
         "failTools": ["get_bank_statement_summary"]
       },
       "approve": false,
+      "realFailToolAttempts": {},
       "expected": {
         "status": "waiting_input",
         "iterations": 3,
@@ -95,6 +99,7 @@
         "failTools": []
       },
       "approve": true,
+      "realFailToolAttempts": {},
       "expected": {
         "status": "completed",
         "iterations": 1,
@@ -118,6 +123,8 @@
         "failTools": []
       },
       "approve": false,
+      "realEligible": false,
+      "realFailToolAttempts": {},
       "expected": {
         "status": "waiting_input",
         "iterations": 0,

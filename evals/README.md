@@ -24,5 +24,15 @@ Its scores validate the harness only and must not be used as resume claims.
 
 ## Next Modes
 
-- E1 adds real PostgreSQL, Qdrant and Bailian providers plus token/cost telemetry.
+- E1 uses real PostgreSQL, Qdrant and Bailian providers plus token/cost telemetry:
+
+```bash
+pnpm db:up
+pnpm eval:m2:real
+```
+
+The real runner creates a temporary PostgreSQL database and Qdrant collection, then removes both
+in a `finally` block. It never reuses development Run or knowledge data. Unit prices are explicit
+environment inputs so a report records the cost assumptions used at execution time.
+
 - E2 repeats real-model runs, injects recovery failures and compares regressions across revisions.

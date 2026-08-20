@@ -50,6 +50,8 @@ export const RiskDatasetSchema = z.object({
     }),
     fixture: RiskFixtureSchema,
     approve: z.boolean().default(false),
+    realEligible: z.boolean().default(true),
+    realFailToolAttempts: z.record(z.string(), z.number().int().nonnegative()).default({}),
     expected: z.object({
       status: z.enum(["waiting_input", "waiting_approval", "completed"]),
       iterations: z.number().int().nonnegative(),
@@ -78,4 +80,3 @@ export type RetrievalDataset = z.infer<typeof RetrievalDatasetSchema>;
 export type RiskDataset = z.infer<typeof RiskDatasetSchema>;
 export type RiskEvaluationCase = RiskDataset["cases"][number];
 export type TenantAttackDataset = z.infer<typeof TenantAttackDatasetSchema>;
-

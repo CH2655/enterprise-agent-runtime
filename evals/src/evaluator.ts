@@ -103,12 +103,22 @@ interface RetrievalHarness {
   dataset: RetrievalDataset;
 }
 
+export interface EvaluationDatasets {
+  retrieval: RetrievalDataset;
+  risk: Awaited<ReturnType<typeof loadRiskDataset>>;
+  tenantAttacks: TenantAttackDataset;
+}
+
+export interface EvaluationToolOptions {
+  knowledgeSearch?: Pick<KnowledgeSearchService, "search">;
+  injectRealFailures?: boolean;
+}
+
 export async function runM2Evaluation(): Promise<M2EvaluationReport> {
-  const [retrievalDataset, riskDataset, attackDataset] = await Promise.all([
-    loadDataset("retrieval.v1.json", RetrievalDatasetSchema),
-    loadDataset("risk-cases.v1.json", RiskDatasetSchema),
-    loadDataset("tenant-attacks.v1.json", TenantAttackDatasetSchema),
-  ]);
+  const datasets = await loadEvaluationDatasets();
+  const retrievalDataset = datasets.retrieval;
+  const riskDataset = datasets.risk;
+  const attackDataset = datasets.tenantAttacks;
   const retrievalHarness = await createRetrievalHarness(retrievalDataset);
   const retrievalCases = await evaluateRetrieval(retrievalHarness);
   const riskCases = await Promise.all(riskDataset.cases.map(evaluateRiskCase));
@@ -160,6 +170,19 @@ export async function runM2Evaluation(): Promise<M2EvaluationReport> {
       "The E0 dataset is intentionally small and must be expanded before M2 exits.",
     ],
   };
+}
+
+export async function loadEvaluationDatasets(): Promise<EvaluationDatasets> {
+  const [retrieval, risk, tenantAttacks] = await Promise.all([
+    loadDataset("retrieval.v1.json", RetrievalDatasetSchema),
+    loadRiskDataset(),
+    loadDataset("tenant-attacks.v1.json", TenantAttackDatasetSchema),
+  ]);
+  return { retrieval, risk, tenantAttacks };
+}
+
+async function loadRiskDataset() {
+  return loadDataset("risk-cases.v1.json", RiskDatasetSchema);
 }
 
 async function createRetrievalHarness(dataset: RetrievalDataset): Promise<RetrievalHarness> {
@@ -277,7 +300,7 @@ async function evaluateRiskCase(testCase: RiskEvaluationCase): Promise<RiskCaseR
   };
 }
 
-function evaluateRiskExpectations(
+export function evaluateRiskExpectations(
   testCase: RiskEvaluationCase,
   status: AgentRunStatus,
   state: RiskAgentState,
@@ -362,8 +385,21 @@ function createEvaluationModel(testCase: RiskEvaluationCase): ScriptedModelProvi
   });
 }
 
-function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluationCase): void {
+export function registerEvaluationTools(
+  registry: ToolRegistry,
+  testCase: RiskEvaluationCase,
+  options: EvaluationToolOptions = {},
+): void {
   const fixture = testCase.fixture;
+  const transientFailures = new Map(Object.entries(testCase.realFailToolAttempts));
+  const shouldFail = (name: string): boolean => {
+    if (fixture.failTools.includes(name)) return true;
+    if (!options.injectRealFailures) return false;
+    const remaining = transientFailures.get(name) ?? 0;
+    if (remaining <= 0) return false;
+    transientFailures.set(name, remaining - 1);
+    return true;
+  };
   const codeInput = z.object({ code: z.string().min(1) });
   const definitions: ToolDefinition<any, any>[] = [
     {
@@ -373,7 +409,7 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
       permission: ({ code }) => ({ appName: "std", metaName: "project", action: "view", objectId: code }),
       inputSchema: codeInput,
       outputSchema: z.object({ code: z.string(), name: z.string(), budget: z.number() }),
-      execute: guardedTool("get_project_profile", fixture.failTools, async ({ code }) => ({ code, name: `${testCase.tenantId}评测项目`, budget: 12_000_000 })),
+      execute: guardedTool("get_project_profile", shouldFail, async ({ code }) => ({ code, name: `${testCase.tenantId}评测项目`, budget: 12_000_000 })),
     },
     {
       name: "get_supplier_profile",
@@ -382,7 +418,7 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
       permission: ({ code }) => ({ appName: "std", metaName: "supplier", action: "view", objectId: code }),
       inputSchema: codeInput,
       outputSchema: z.object({ code: z.string(), name: z.string(), registeredCapital: z.number() }),
-      execute: guardedTool("get_supplier_profile", fixture.failTools, async ({ code }) => ({ code, name: `${testCase.tenantId}评测供应商`, registeredCapital: 2_000_000 })),
+      execute: guardedTool("get_supplier_profile", shouldFail, async ({ code }) => ({ code, name: `${testCase.tenantId}评测供应商`, registeredCapital: 2_000_000 })),
     },
     {
       name: "get_enterprise_risks",
@@ -391,7 +427,7 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
       permission: ({ code }) => ({ appName: "std", metaName: "supplier", action: "view", objectId: code }),
       inputSchema: codeInput,
       outputSchema: z.object({ dishonest: z.boolean(), legalCaseCount: z.number() }),
-      execute: guardedTool("get_enterprise_risks", fixture.failTools, async () => fixture.enterpriseRisk),
+      execute: guardedTool("get_enterprise_risks", shouldFail, async () => fixture.enterpriseRisk),
     },
     {
       name: "get_bank_statement_summary",
@@ -400,7 +436,7 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
       permission: ({ code }) => ({ appName: "std", metaName: "supplier", action: "view_finance_summary", objectId: code }),
       inputSchema: codeInput,
       outputSchema: z.object({ abnormalTransactions: z.number(), cashFlowStable: z.boolean() }),
-      execute: guardedTool("get_bank_statement_summary", fixture.failTools, async () => fixture.bankStatement),
+      execute: guardedTool("get_bank_statement_summary", shouldFail, async () => fixture.bankStatement),
     },
     {
       name: "search_internal_policy",
@@ -416,16 +452,29 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
         section: z.string(),
         locator: z.string(),
         content: z.string(),
+        contentHash: z.string().optional(),
       }),
-      execute: guardedTool("search_internal_policy", fixture.failTools, async () => ({
-        documentId: `${testCase.tenantId}-supplier-policy`,
-        documentKey: "supplier-policy",
-        documentVersion: 1,
-        chunkId: `${testCase.tenantId}-supplier-policy-risk-review`,
-        section: "失信复核",
-        locator: JSON.stringify({ documentVersion: 1, section: "失信复核", startLine: 1, endLine: 2 }),
-        content: `${testCase.tenantId}供应商风险必须依据本租户制度复核。`,
-      })),
+      execute: guardedTool("search_internal_policy", shouldFail, async ({ query }, context) => {
+        if (options.knowledgeSearch) {
+          const [result] = await options.knowledgeSearch.search({
+            tenantId: context.identity.tenantId,
+            query,
+            limit: 1,
+            permissionTags: context.identity.roles,
+          });
+          if (!result) throw new Error("No authorized evaluation policy found.");
+          return result;
+        }
+        return {
+          documentId: `${testCase.tenantId}-supplier-policy`,
+          documentKey: "supplier-policy",
+          documentVersion: 1,
+          chunkId: `${testCase.tenantId}-supplier-policy-risk-review`,
+          section: "失信复核",
+          locator: JSON.stringify({ documentVersion: 1, section: "失信复核", startLine: 1, endLine: 2 }),
+          content: `${testCase.tenantId}供应商风险必须依据本租户制度复核。`,
+        };
+      }),
     },
     {
       name: "create_rectification_task",
@@ -435,7 +484,7 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
       permission: ({ caseId }) => ({ appName: "std", metaName: "rectification_task", action: "create", objectId: caseId }),
       inputSchema: z.object({ caseId: z.string(), findingIds: z.array(z.string()).min(1) }),
       outputSchema: z.object({ taskId: z.string(), created: z.boolean() }),
-      execute: guardedTool("create_rectification_task", fixture.failTools, async ({ caseId }) => ({ taskId: `rectification-${caseId}`, created: true })),
+      execute: guardedTool("create_rectification_task", shouldFail, async ({ caseId }) => ({ taskId: `rectification-${caseId}`, created: true })),
     },
   ];
   for (const definition of definitions) registry.register(definition);
@@ -443,12 +492,12 @@ function registerEvaluationTools(registry: ToolRegistry, testCase: RiskEvaluatio
 
 function guardedTool<TInput, TOutput>(
   name: string,
-  failures: string[],
-  execute: (input: TInput) => Promise<TOutput>,
-): (input: TInput) => Promise<TOutput> {
-  return async (input) => {
-    if (failures.includes(name)) throw new Error(`Injected evaluation failure: ${name}`);
-    return execute(input);
+  shouldFail: (name: string) => boolean,
+  execute: (input: TInput, context: { identity: { tenantId: string; roles?: string[] } }) => Promise<TOutput>,
+): (input: TInput, context: { identity: { tenantId: string; roles?: string[] } }) => Promise<TOutput> {
+  return async (input, context) => {
+    if (shouldFail(name)) throw new Error(`Injected evaluation failure: ${name}`);
+    return execute(input, context);
   };
 }
 
