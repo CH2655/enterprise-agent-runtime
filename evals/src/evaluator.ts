@@ -109,13 +109,19 @@ export interface EvaluationDatasets {
   tenantAttacks: TenantAttackDataset;
 }
 
+export type EvaluationDatasetVersion = "v1" | "v2";
+
+export interface EvaluationRunOptions {
+  datasetVersion?: EvaluationDatasetVersion;
+}
+
 export interface EvaluationToolOptions {
   knowledgeSearch?: Pick<KnowledgeSearchService, "search">;
   injectRealFailures?: boolean;
 }
 
-export async function runM2Evaluation(): Promise<M2EvaluationReport> {
-  const datasets = await loadEvaluationDatasets();
+export async function runM2Evaluation(options: EvaluationRunOptions = {}): Promise<M2EvaluationReport> {
+  const datasets = await loadEvaluationDatasets(options.datasetVersion);
   const retrievalDataset = datasets.retrieval;
   const riskDataset = datasets.risk;
   const attackDataset = datasets.tenantAttacks;
@@ -172,17 +178,19 @@ export async function runM2Evaluation(): Promise<M2EvaluationReport> {
   };
 }
 
-export async function loadEvaluationDatasets(): Promise<EvaluationDatasets> {
+export async function loadEvaluationDatasets(
+  version: EvaluationDatasetVersion = "v1",
+): Promise<EvaluationDatasets> {
   const [retrieval, risk, tenantAttacks] = await Promise.all([
-    loadDataset("retrieval.v1.json", RetrievalDatasetSchema),
-    loadRiskDataset(),
-    loadDataset("tenant-attacks.v1.json", TenantAttackDatasetSchema),
+    loadDataset(`retrieval.${version}.json`, RetrievalDatasetSchema),
+    loadRiskDataset(version),
+    loadDataset(`tenant-attacks.${version}.json`, TenantAttackDatasetSchema),
   ]);
   return { retrieval, risk, tenantAttacks };
 }
 
-async function loadRiskDataset() {
-  return loadDataset("risk-cases.v1.json", RiskDatasetSchema);
+async function loadRiskDataset(version: EvaluationDatasetVersion = "v1") {
+  return loadDataset(`risk-cases.${version}.json`, RiskDatasetSchema);
 }
 
 async function createRetrievalHarness(dataset: RetrievalDataset): Promise<RetrievalHarness> {

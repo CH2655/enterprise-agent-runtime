@@ -36,3 +36,12 @@ in a `finally` block. It never reuses development Run or knowledge data. Unit pr
 environment inputs so a report records the cost assumptions used at execution time.
 
 - E2 repeats real-model runs, injects recovery failures and compares regressions across revisions.
+
+```bash
+pnpm eval:m2:e2
+```
+
+E2 always uses the versioned 30/20/10 `v2` datasets. It runs three times by default, records
+mean/min/max/standard deviation, aggregates token cost, and compares compatible metrics with the
+previous `latest.e2.json`. Set `EVAL_E2_RUNS=1` only for a paid smoke run; a one-run report is not a
+variance baseline.

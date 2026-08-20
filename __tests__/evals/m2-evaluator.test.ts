@@ -51,4 +51,20 @@ describe("M2 E0 evaluation", () => {
     expect(markdown).toContain("not a real-model quality claim");
     expect(markdown).toContain("E0 uses deterministic embeddings");
   });
+
+  it("应使用v2数据集覆盖30个检索、20个风控和10个攻击样例", async () => {
+    const report = await runM2Evaluation({ datasetVersion: "v2" });
+
+    expect(report.datasets).toEqual({
+      retrieval: "retrieval.v2",
+      risk: "risk-cases.v2",
+      tenantAttacks: "tenant-attacks.v2",
+    });
+    expect(report.retrieval.cases).toHaveLength(30);
+    expect(report.risk.cases).toHaveLength(20);
+    expect(report.security.cases).toHaveLength(10);
+    expect(report.risk.cases.filter((item) => item.iterations > 1)).toHaveLength(4);
+    expect(report.risk.cases.filter((item) => item.status === "completed")).toHaveLength(7);
+    expect(report.overallPassed).toBe(true);
+  });
 });

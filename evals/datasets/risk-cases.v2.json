@@ -1,0 +1,145 @@
+{
+  "version": "risk-cases.v2",
+  "cases": [
+    {
+      "id": "risk2-a-high-both-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-001", "projectCode": "PA-101", "supplierCode": "SA-101" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 2 }, "bankStatement": { "abnormalTransactions": 3, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["企业信用", "资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["plan.created", "approval.required"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"], "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-a-normal-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-002", "projectCode": "PA-102", "supplierCode": "SA-102" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 0, "cashFlowStable": true }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": [], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["plan.created", "run.completed"], "citationSupport": {} }
+    },
+    {
+      "id": "risk2-a-credit-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-003", "projectCode": "PA-103", "supplierCode": "SA-103" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 1 }, "bankStatement": { "abnormalTransactions": 0, "cashFlowStable": true }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["企业信用"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"] } }
+    },
+    {
+      "id": "risk2-a-cash-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-004", "projectCode": "PA-104", "supplierCode": "SA-104" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 4, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-a-supplemental-01", "tenantId": "tenant-a", "strategy": "supplemental_loop",
+      "input": { "caseId": "E2-A-005", "projectCode": "PA-105", "supplierCode": "SA-105" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 5, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": { "get_bank_statement_summary": 1 },
+      "expected": { "status": "waiting_approval", "iterations": 2, "findingDimensions": ["资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["plan.created", "approval.required"], "citationSupport": { "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-a-bounded-bank-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-006", "projectCode": "PA-106", "supplierCode": "SA-106" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 1 }, "bankStatement": { "abnormalTransactions": 0, "cashFlowStable": true }, "failTools": ["get_bank_statement_summary"] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_input", "iterations": 3, "findingDimensions": [], "evidenceCategories": ["project", "supplier", "enterprise-risk", "policy"], "requiredEvents": ["tool.failed", "run.waiting_input"], "citationSupport": {} }
+    },
+    {
+      "id": "risk2-a-approved-both-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-007", "projectCode": "PA-107", "supplierCode": "SA-107" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 4 }, "bankStatement": { "abnormalTransactions": 2, "cashFlowStable": false }, "failTools": [] },
+      "approve": true, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": ["企业信用", "资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required", "approval.completed", "run.completed"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"], "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-a-high-both-02", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-008", "projectCode": "PA-108", "supplierCode": "SA-108" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 6 }, "bankStatement": { "abnormalTransactions": 8, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["企业信用", "资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"], "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-a-normal-02", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-009", "projectCode": "PA-109", "supplierCode": "SA-109" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 1, "cashFlowStable": true }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": [], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["run.completed"], "citationSupport": {} }
+    },
+    {
+      "id": "risk2-a-approved-credit-01", "tenantId": "tenant-a", "strategy": "one_pass",
+      "input": { "caseId": "E2-A-010", "projectCode": "PA-110", "supplierCode": "SA-110" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 2 }, "bankStatement": { "abnormalTransactions": 0, "cashFlowStable": true }, "failTools": [] },
+      "approve": true, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": ["企业信用"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.completed", "run.completed"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"] } }
+    },
+    {
+      "id": "risk2-b-high-both-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-001", "projectCode": "PB-101", "supplierCode": "SB-101" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 3 }, "bankStatement": { "abnormalTransactions": 3, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["企业信用", "资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"], "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-b-normal-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-002", "projectCode": "PB-102", "supplierCode": "SB-102" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 0, "cashFlowStable": true }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": [], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["run.completed"], "citationSupport": {} }
+    },
+    {
+      "id": "risk2-b-credit-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-003", "projectCode": "PB-103", "supplierCode": "SB-103" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 1 }, "bankStatement": { "abnormalTransactions": 0, "cashFlowStable": true }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["企业信用"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"] } }
+    },
+    {
+      "id": "risk2-b-cash-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-004", "projectCode": "PB-104", "supplierCode": "SB-104" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 2, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-b-supplemental-01", "tenantId": "tenant-b", "strategy": "supplemental_loop",
+      "input": { "caseId": "E2-B-005", "projectCode": "PB-105", "supplierCode": "SB-105" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 6, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": { "get_bank_statement_summary": 1 },
+      "expected": { "status": "waiting_approval", "iterations": 2, "findingDimensions": ["资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["plan.created", "approval.required"], "citationSupport": { "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-b-approved-both-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-006", "projectCode": "PB-106", "supplierCode": "SB-106" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 5 }, "bankStatement": { "abnormalTransactions": 4, "cashFlowStable": false }, "failTools": [] },
+      "approve": true, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": ["企业信用", "资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required", "approval.completed", "run.completed"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"], "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-b-approved-cash-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-007", "projectCode": "PB-107", "supplierCode": "SB-107" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 7, "cashFlowStable": false }, "failTools": [] },
+      "approve": true, "realFailToolAttempts": {},
+      "expected": { "status": "completed", "iterations": 1, "findingDimensions": ["资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.completed", "run.completed"], "citationSupport": { "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-b-credit-02", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-008", "projectCode": "PB-108", "supplierCode": "SB-108" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 8 }, "bankStatement": { "abnormalTransactions": 1, "cashFlowStable": true }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["企业信用"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "企业信用": ["enterprise-risk", "policy"] } }
+    },
+    {
+      "id": "risk2-b-cash-02", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-009", "projectCode": "PB-109", "supplierCode": "SB-109" },
+      "fixture": { "enterpriseRisk": { "dishonest": false, "legalCaseCount": 0 }, "bankStatement": { "abnormalTransactions": 10, "cashFlowStable": false }, "failTools": [] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_approval", "iterations": 1, "findingDimensions": ["资金稳定性"], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement", "policy"], "requiredEvents": ["approval.required"], "citationSupport": { "资金稳定性": ["bank-statement", "policy"] } }
+    },
+    {
+      "id": "risk2-b-bounded-policy-01", "tenantId": "tenant-b", "strategy": "one_pass",
+      "input": { "caseId": "E2-B-010", "projectCode": "PB-110", "supplierCode": "SB-110" },
+      "fixture": { "enterpriseRisk": { "dishonest": true, "legalCaseCount": 2 }, "bankStatement": { "abnormalTransactions": 2, "cashFlowStable": false }, "failTools": ["search_internal_policy"] },
+      "approve": false, "realFailToolAttempts": {},
+      "expected": { "status": "waiting_input", "iterations": 3, "findingDimensions": [], "evidenceCategories": ["project", "supplier", "enterprise-risk", "bank-statement"], "requiredEvents": ["tool.failed", "run.waiting_input"], "citationSupport": {} }
+    }
+  ]
+}

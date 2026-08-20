@@ -22,6 +22,7 @@
     "test:watch": "vitest",
     "eval:m2": "node --import tsx evals/src/cli.ts --mode deterministic",
     "eval:m2:real": "node --env-file-if-exists=.env --import tsx evals/src/real-cli.ts",
+    "eval:m2:e2": "node --env-file-if-exists=.env --import tsx evals/src/e2-cli.ts",
     "eval:bailian:smoke": "node --env-file-if-exists=.env --import tsx evals/src/bailian-smoke.ts",
     "check": "pnpm typecheck && pnpm test"
   },

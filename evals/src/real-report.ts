@@ -1,18 +1,21 @@
 import type { RealM2EvaluationReport } from "./real-evaluator.js";
 
 export function renderRealMarkdownReport(report: RealM2EvaluationReport): string {
+  const phase = report.sampleSizes.risk >= 20 ? "E2" : "E1";
   return [
-    "# M2 E1 Real Evaluation",
+    `# M2 ${phase} Real Evaluation`,
     "",
-    "> Small-sample baseline using real PostgreSQL, Qdrant and Bailian providers.",
+    "> Baseline using real PostgreSQL, Qdrant and Bailian providers.",
     "",
     "## Run Metadata",
     "",
     `- Generated: ${report.generatedAt}`,
     `- Git revision: \`${report.gitRevision}\``,
+    `- Run label: \`${report.runLabel}\``,
     `- Model: \`${report.providers.model}\``,
     `- Embedding: \`${report.providers.embedding}\` (${report.providers.embeddingDimensions} dimensions)`,
     `- Datasets: \`${Object.values(report.datasets).join("`, `")}\``,
+    `- Sample sizes: ${report.sampleSizes.retrieval}/${report.sampleSizes.risk}/${report.sampleSizes.tenantAttacks}`,
     "",
     "## Quality Summary",
     "",
@@ -24,6 +27,7 @@ export function renderRealMarkdownReport(report: RealM2EvaluationReport): string
     metric("Task Success Rate", percentage(report.risk.taskSuccessRate), "baseline", report.risk.taskSuccessRate === 1),
     metric("Tenant Leakage", String(report.security.tenantLeakage), "0", report.thresholds.tenantLeakage),
     metric("Duplicate Side Effects", String(report.risk.duplicateSideEffects), "0", report.thresholds.duplicateSideEffects),
+    metric("Recovery Pass Rate", percentage(report.recovery.passRate), "100%", report.thresholds.recoveryPassRate),
     "",
     `Overall: **${report.overallPassed ? "PASS" : "FAIL"}**`,
     "",
@@ -58,4 +62,3 @@ function metric(name: string, result: string, target: string, passed: unknown): 
 function percentage(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
-

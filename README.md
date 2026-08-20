@@ -180,6 +180,14 @@ E1 使用临时 PostgreSQL 数据库和临时 Qdrant Collection，结束后自�
 
 首个 E1 小样本基线绑定 Git `25b5106`：Recall@5、引用准确率、证据有效率和任务成功率均为 100%，租户泄漏与重复副作用均为 0，Agent P50/P95 为 5.78s/6.95s，9845 Token，估算费用 CNY 0.143793。完整结果见 [`evals/reports/latest.real.md`](evals/reports/latest.real.md)。
 
+运行 E2 验收规模三轮评测：
+
+```bash
+pnpm eval:m2:e2
+```
+
+E2 固定使用 30 个检索问题、20 个风控案件和 10 个攻击样例，聚合三轮均值、最差值、标准差、恢复率、Token 与费用，并在存在同版本历史报告时执行质量和 P95 回归门禁。
+
 先发布一版租户制度并完成索引：
 
 ```bash

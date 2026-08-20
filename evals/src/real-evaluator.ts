@@ -27,6 +27,7 @@ import {
   evaluateRiskExpectations,
   loadEvaluationDatasets,
   registerEvaluationTools,
+  type EvaluationDatasetVersion,
   type RiskCaseResult,
   type RetrievalCaseResult,
   type SecurityCaseResult,
@@ -44,9 +45,21 @@ export interface ProviderCallRecord {
   error?: string;
 }
 
+export interface RecoveryCaseResult {
+  id: string;
+  mode: "transient_tool_failure" | "bounded_tool_failure";
+  passed: boolean;
+}
+
+export interface RealM2EvaluationOptions {
+  datasetVersion?: EvaluationDatasetVersion;
+  runLabel?: string;
+}
+
 export interface RealM2EvaluationReport {
-  schemaVersion: "1.0";
+  schemaVersion: "1.1";
   mode: "real";
+  runLabel: string;
   generatedAt: string;
   gitRevision: string;
   providers: {
@@ -57,6 +70,7 @@ export interface RealM2EvaluationReport {
     vectorIndex: "qdrant";
   };
   datasets: { retrieval: string; risk: string; tenantAttacks: string };
+  sampleSizes: { retrieval: number; risk: number; tenantAttacks: number };
   retrieval: { cases: RetrievalCaseResult[]; recallAt5: number };
   risk: {
     cases: RiskCaseResult[];
@@ -68,6 +82,7 @@ export interface RealM2EvaluationReport {
     p95DurationMs: number;
   };
   security: { cases: SecurityCaseResult[]; tenantLeakage: number };
+  recovery: { cases: RecoveryCaseResult[]; passRate: number };
   usage: {
     calls: ProviderCallRecord[];
     inputTokens: number;
@@ -82,9 +97,12 @@ export interface RealM2EvaluationReport {
   limitations: string[];
 }
 
-export async function runRealM2Evaluation(): Promise<RealM2EvaluationReport> {
+export async function runRealM2Evaluation(
+  options: RealM2EvaluationOptions = {},
+): Promise<RealM2EvaluationReport> {
   const config = readRealConfig();
-  const datasets = await loadEvaluationDatasets();
+  const datasetVersion = options.datasetVersion ?? "v1";
+  const datasets = await loadEvaluationDatasets(datasetVersion);
   const calls: ProviderCallRecord[] = [];
   const temporary = await createTemporaryDatabase(config.databaseUrl);
   const collection = `ear_eval_${temporary.name}`;
@@ -125,8 +143,16 @@ export async function runRealM2Evaluation(): Promise<RealM2EvaluationReport> {
     for (const testCase of eligibleRiskCases) {
       riskCases.push(await evaluateRealRiskCase(testCase, infrastructure, search, config, calls));
     }
+    const riskById = new Map(riskCases.map((item) => [item.id, item]));
+    const recoveryCases = eligibleRiskCases.flatMap((testCase): RecoveryCaseResult[] => {
+      const mode = recoveryMode(testCase);
+      if (!mode) return [];
+      return [{ id: testCase.id, mode, passed: riskById.get(testCase.id)?.passed === true }];
+    });
     return buildReport({
       config,
+      datasetVersion,
+      runLabel: options.runLabel ?? `${datasetVersion}-run-1`,
       datasets: {
         retrieval: datasets.retrieval.version,
         risk: datasets.risk.version,
@@ -135,6 +161,7 @@ export async function runRealM2Evaluation(): Promise<RealM2EvaluationReport> {
       retrievalCases,
       riskCases,
       securityCases,
+      recoveryCases,
       calls,
     });
   } finally {
@@ -270,10 +297,13 @@ async function evaluateRealRiskCase(
 
 function buildReport(input: {
   config: ReturnType<typeof readRealConfig>;
+  datasetVersion: EvaluationDatasetVersion;
+  runLabel: string;
   datasets: RealM2EvaluationReport["datasets"];
   retrievalCases: RetrievalCaseResult[];
   riskCases: RiskCaseResult[];
   securityCases: SecurityCaseResult[];
+  recoveryCases: RecoveryCaseResult[];
   calls: ProviderCallRecord[];
 }): RealM2EvaluationReport {
   const retrievalRecall = ratio(
@@ -285,6 +315,10 @@ function buildReport(input: {
   const evidenceValidity = average(input.riskCases.map((item) => item.evidenceValidity));
   const duplicateSideEffects = sum(input.riskCases.map((item) => item.duplicateSideEffects));
   const tenantLeakage = sum(input.securityCases.map((item) => item.leaks));
+  const recoveryPassRate = ratio(
+    input.recoveryCases.filter((item) => item.passed).length,
+    input.recoveryCases.length,
+  );
   const inputTokens = sum(input.calls.filter(isModelCall).map((item) => item.inputTokens));
   const outputTokens = sum(input.calls.filter(isModelCall).map((item) => item.outputTokens));
   const embeddingTokens = sum(input.calls.filter((item) => item.endpoint === "embeddings").map((item) => item.inputTokens));
@@ -301,11 +335,13 @@ function buildReport(input: {
     evidenceValidity: evidenceValidity === 1,
     tenantLeakage: tenantLeakage === 0,
     duplicateSideEffects: duplicateSideEffects === 0,
+    recoveryPassRate: recoveryPassRate === 1,
   };
   const durations = input.riskCases.map((item) => item.durationMs);
   return {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     mode: "real",
+    runLabel: input.runLabel,
     generatedAt: new Date().toISOString(),
     gitRevision: readGitRevision(),
     providers: {
@@ -316,6 +352,11 @@ function buildReport(input: {
       vectorIndex: "qdrant",
     },
     datasets: input.datasets,
+    sampleSizes: {
+      retrieval: input.retrievalCases.length,
+      risk: input.riskCases.length,
+      tenantAttacks: input.securityCases.length,
+    },
     retrieval: { cases: input.retrievalCases, recallAt5: retrievalRecall },
     risk: {
       cases: input.riskCases,
@@ -327,6 +368,7 @@ function buildReport(input: {
       p95DurationMs: percentile(durations, 0.95),
     },
     security: { cases: input.securityCases, tenantLeakage },
+    recovery: { cases: input.recoveryCases, passRate: recoveryPassRate },
     usage: {
       calls: input.calls,
       inputTokens,
@@ -339,11 +381,25 @@ function buildReport(input: {
     thresholds,
     overallPassed: Object.values(thresholds).every(Boolean) && taskSuccessRate === 1,
     limitations: [
-      "This E1 baseline uses a small 8/5/3 dataset and must not be presented as the final 30/20/10 benchmark.",
+      ...(input.datasetVersion === "v1"
+        ? ["This E1 baseline uses a small 8/5/3 dataset and must not be presented as the final 30/20/10 benchmark."]
+        : ["This is one 30/20/10 E2 sample; use the aggregate report for variance and regression claims."]),
       "Cost is estimated from configured unit rates; the Bailian billing console remains the billing source of truth.",
-      "Recovery fault injection and three-run variance are deferred to E2.",
+      ...(input.datasetVersion === "v1"
+        ? ["Recovery fault injection and three-run variance are deferred to E2."]
+        : ["Recovery covers transient and bounded tool failures; infrastructure outage recovery remains integration-tested separately."]),
     ],
   };
+}
+
+function recoveryMode(
+  testCase: Awaited<ReturnType<typeof loadEvaluationDatasets>>["risk"]["cases"][number],
+): RecoveryCaseResult["mode"] | undefined {
+  if (Object.values(testCase.realFailToolAttempts).some((attempts) => attempts > 0)) {
+    return "transient_tool_failure";
+  }
+  if (testCase.fixture.failTools.length > 0) return "bounded_tool_failure";
+  return undefined;
 }
 
 function observedFetch(operation: string, sink: ProviderCallRecord[]): typeof fetch {

@@ -1,0 +1,91 @@
+{
+  "version": "retrieval.v2",
+  "documents": [
+    {
+      "tenantId": "tenant-a",
+      "userId": "eval-admin-a",
+      "documentKey": "supplier-policy",
+      "version": 2,
+      "title": "A租户供应商准入制度",
+      "permissionTags": ["risk_reviewer"],
+      "content": "# 失信复核\n供应商存在失信被执行记录时，必须暂停自动准入并由风控负责人进行人工复核。\n\n## 资金异常\n单月出现三笔以上大额异常交易时，应核验交易用途并补充资金来源证明。\n\n## 注册资本\n注册资本低于项目预算百分之二十时，应补充履约担保。\n\n## 整改跟踪\n风险复核通过后，应创建整改任务并按月跟踪关闭情况。"
+    },
+    {
+      "tenantId": "tenant-a",
+      "userId": "eval-admin-a",
+      "documentKey": "finance-policy",
+      "version": 2,
+      "title": "A租户资金核验制度",
+      "permissionTags": ["finance_reviewer"],
+      "content": "# 流水核验\n银行流水至少覆盖最近十二个月，并对连续亏损月份进行说明。\n\n## 预付款控制\n首次合作供应商的预付款比例不得超过合同金额的百分之十。\n\n## 账户一致性\n收款账户名称必须与合同签约主体保持一致。\n\n## 异常转账\n向个人账户或关联方账户转账必须提交业务真实性材料。"
+    },
+    {
+      "tenantId": "tenant-a",
+      "userId": "eval-admin-a",
+      "documentKey": "project-control-policy",
+      "version": 1,
+      "title": "A租户项目履约控制制度",
+      "permissionTags": ["project_manager"],
+      "content": "# 分包准入\n专业分包单位进场前必须完成资质、保险和人员实名核验。\n\n## 进度预警\n关键里程碑延误超过七天时，项目经理应提交赶工计划并升级预警。\n\n## 质量整改\n同一质量问题复发两次时，应暂停对应工序并组织专项复盘。\n\n## 安全事故\n发生人员受伤事故后必须在一小时内上报并保全现场记录。"
+    },
+    {
+      "tenantId": "tenant-b",
+      "userId": "eval-admin-b",
+      "documentKey": "supplier-policy",
+      "version": 2,
+      "title": "B租户供应商准入制度",
+      "permissionTags": ["risk_reviewer"],
+      "content": "# 失信处置\n供应商存在一般失信记录时仅列入观察名单，不自动触发人工复核。\n\n## 资金核验\n累计异常交易超过五十万元时，必须由财务负责人复核。\n\n## 履约要求\n新供应商必须提供最近两个项目的履约证明。\n\n## 退出机制\n连续两次整改未通过的供应商应退出合格名录。"
+    },
+    {
+      "tenantId": "tenant-b",
+      "userId": "eval-admin-b",
+      "documentKey": "finance-policy",
+      "version": 2,
+      "title": "B租户资金管理制度",
+      "permissionTags": ["finance_reviewer"],
+      "content": "# 流水期限\n银行流水只需覆盖最近六个月。\n\n## 预付款上限\n战略供应商预付款比例可以达到合同金额的百分之三十。\n\n## 收款账户\n变更收款账户需经过采购经理确认。\n\n## 关联交易\n关联方交易超过二十万元时需要专项说明。"
+    },
+    {
+      "tenantId": "tenant-b",
+      "userId": "eval-admin-b",
+      "documentKey": "procurement-policy",
+      "version": 1,
+      "title": "B租户采购合规制度",
+      "permissionTags": ["procurement_reviewer"],
+      "content": "# 报价偏差\n中标价高于预算控制价百分之五时，必须重新履行价格审批。\n\n## 单一来源\n单一来源采购金额超过八十万元时，应提交总经理办公会审议。\n\n## 验收付款\n设备采购必须完成到货验收和试运行后方可支付尾款。\n\n## 黑名单复核\n黑名单供应商申请恢复合作时，必须经过法务和采购联合复核。"
+    }
+  ],
+  "cases": [
+    { "id": "ret2-a-credit", "tenantId": "tenant-a", "query": "供应商有失信被执行记录时是否需要人工复核", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "supplier-policy", "section": "失信复核" }] },
+    { "id": "ret2-a-capital", "tenantId": "tenant-a", "query": "注册资本不足项目预算时需要什么履约保障", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "supplier-policy", "section": "注册资本" }] },
+    { "id": "ret2-a-fund-anomaly", "tenantId": "tenant-a", "query": "一个月有多少笔大额异常交易需要补充资金来源证明", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "supplier-policy", "section": "资金异常" }] },
+    { "id": "ret2-a-rectification", "tenantId": "tenant-a", "query": "风险复核通过后整改任务按什么频率跟踪", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "supplier-policy", "section": "整改跟踪" }] },
+    { "id": "ret2-a-bank-period", "tenantId": "tenant-a", "query": "供应商银行流水至少要提供最近几个月", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "finance-policy", "section": "流水核验" }] },
+    { "id": "ret2-a-prepayment", "tenantId": "tenant-a", "query": "首次合作供应商预付款比例上限是多少", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "finance-policy", "section": "预付款控制" }] },
+    { "id": "ret2-a-account", "tenantId": "tenant-a", "query": "收款账户名称需要与哪个主体一致", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "finance-policy", "section": "账户一致性" }] },
+    { "id": "ret2-a-transfer", "tenantId": "tenant-a", "query": "向个人账户转账时必须提供什么材料", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "finance-policy", "section": "异常转账" }] },
+    { "id": "ret2-a-subcontract", "tenantId": "tenant-a", "query": "专业分包进场前要核验资质保险和什么信息", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "project-control-policy", "section": "分包准入" }] },
+    { "id": "ret2-a-schedule", "tenantId": "tenant-a", "query": "关键里程碑延期多久需要提交赶工计划", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "project-control-policy", "section": "进度预警" }] },
+    { "id": "ret2-a-quality", "tenantId": "tenant-a", "query": "质量问题重复发生两次应如何处理工序", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "project-control-policy", "section": "质量整改" }] },
+    { "id": "ret2-a-safety", "tenantId": "tenant-a", "query": "人员受伤事故发生后最晚多长时间上报", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "project-control-policy", "section": "安全事故" }] },
+    { "id": "ret2-a-credit-paraphrase", "tenantId": "tenant-a", "query": "被列为失信被执行人的候选供应商能否自动通过准入", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "supplier-policy", "section": "失信复核" }] },
+    { "id": "ret2-a-loss-months", "tenantId": "tenant-a", "query": "连续亏损月份在流水审查中需要怎样说明", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "finance-policy", "section": "流水核验" }] },
+    { "id": "ret2-a-site-record", "tenantId": "tenant-a", "query": "安全事故后除了上报还需要保留哪类现场材料", "permissionTags": ["risk_reviewer", "finance_reviewer", "project_manager"], "relevant": [{ "documentKey": "project-control-policy", "section": "安全事故" }] },
+    { "id": "ret2-b-credit", "tenantId": "tenant-b", "query": "一般失信记录会不会自动触发人工复核", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "supplier-policy", "section": "失信处置" }] },
+    { "id": "ret2-b-fund", "tenantId": "tenant-b", "query": "异常交易累计超过多少钱必须由财务负责人复核", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "supplier-policy", "section": "资金核验" }] },
+    { "id": "ret2-b-performance", "tenantId": "tenant-b", "query": "新供应商需要提供几个既往项目的履约证明", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "supplier-policy", "section": "履约要求" }] },
+    { "id": "ret2-b-exit", "tenantId": "tenant-b", "query": "连续整改未通过几次会退出供应商名录", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "supplier-policy", "section": "退出机制" }] },
+    { "id": "ret2-b-bank-period", "tenantId": "tenant-b", "query": "B租户审查供应商流水需要覆盖多长时间", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "finance-policy", "section": "流水期限" }] },
+    { "id": "ret2-b-prepayment", "tenantId": "tenant-b", "query": "战略供应商可以支付多少比例的预付款", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "finance-policy", "section": "预付款上限" }] },
+    { "id": "ret2-b-account-change", "tenantId": "tenant-b", "query": "供应商变更收款账户要由谁确认", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "finance-policy", "section": "收款账户" }] },
+    { "id": "ret2-b-related", "tenantId": "tenant-b", "query": "关联方交易超过多少钱需要专项说明", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "finance-policy", "section": "关联交易" }] },
+    { "id": "ret2-b-price", "tenantId": "tenant-b", "query": "中标价超过预算控制价多少比例要重新价格审批", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "procurement-policy", "section": "报价偏差" }] },
+    { "id": "ret2-b-single-source", "tenantId": "tenant-b", "query": "单一来源采购达到什么金额要上总经理办公会", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "procurement-policy", "section": "单一来源" }] },
+    { "id": "ret2-b-acceptance", "tenantId": "tenant-b", "query": "设备采购支付尾款前需要完成哪些验收步骤", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "procurement-policy", "section": "验收付款" }] },
+    { "id": "ret2-b-blacklist", "tenantId": "tenant-b", "query": "黑名单供应商恢复合作需要哪些部门联合复核", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "procurement-policy", "section": "黑名单复核" }] },
+    { "id": "ret2-b-credit-paraphrase", "tenantId": "tenant-b", "query": "有普通失信信息的供应商是不是一定要转人工审批", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "supplier-policy", "section": "失信处置" }] },
+    { "id": "ret2-b-trial-run", "tenantId": "tenant-b", "query": "采购设备仅到货未试运行能否支付尾款", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "procurement-policy", "section": "验收付款" }] },
+    { "id": "ret2-b-prepayment-paraphrase", "tenantId": "tenant-b", "query": "合同金额一百万元时战略供应商最高可预付多少", "permissionTags": ["risk_reviewer", "finance_reviewer", "procurement_reviewer"], "relevant": [{ "documentKey": "finance-policy", "section": "预付款上限" }] }
+  ]
+}
