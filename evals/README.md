@@ -45,3 +45,7 @@ E2 always uses the versioned 30/20/10 `v2` datasets. It runs three times by defa
 mean/min/max/standard deviation, aggregates token cost, and compares compatible metrics with the
 previous `latest.e2.json`. Set `EVAL_E2_RUNS=1` only for a paid smoke run; a one-run report is not a
 variance baseline.
+
+The first accepted E2 baseline is stored in `reports/latest.e2.json` and `.md`. It records the
+pre-guard compatible baseline as the regression source, so the quality improvement remains
+traceable to the business-fact verification change rather than an altered dataset.

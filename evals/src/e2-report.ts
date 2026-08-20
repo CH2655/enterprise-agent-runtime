@@ -46,7 +46,15 @@ export function renderE2MarkdownReport(report: E2EvaluationReport): string {
     "## Regression",
     "",
     `- Comparable baseline: ${report.regression.compatible ? "yes" : "no"}`,
+    ...(report.regression.baselineGitRevision
+      ? [`- Baseline Git revision: \`${report.regression.baselineGitRevision}\``]
+      : []),
     `- Regression gate: ${report.regression.passed ? "PASS" : "FAIL"}`,
+    `- Retrieval Recall@5 delta: ${signedPercentage(report.regression.deltas.retrievalRecallAt5)}`,
+    `- Citation Accuracy delta: ${signedPercentage(report.regression.deltas.citationAccuracy)}`,
+    `- Task Success Rate delta: ${signedPercentage(report.regression.deltas.taskSuccessRate)}`,
+    `- Recovery Pass Rate delta: ${signedPercentage(report.regression.deltas.recoveryPassRate)}`,
+    `- P95 latency delta: ${signedPercentage(report.regression.deltas.p95DurationMsRatio)}`,
     ...report.regression.issues.map((item) => `- ${item}`),
     "",
     `Overall: **${report.overallPassed ? "PASS" : "FAIL"}**`,
@@ -64,6 +72,10 @@ function distributionRow(name: string, value: MetricDistribution, target: string
 
 function percentage(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
+}
+
+function signedPercentage(value: number): string {
+  return `${value > 0 ? "+" : ""}${percentage(value)}`;
 }
 
 function duration(value: MetricDistribution): string {

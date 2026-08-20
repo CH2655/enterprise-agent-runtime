@@ -60,7 +60,7 @@ tenant-b 对 tenant-a 的以下访问全部失败且不泄漏对象内容：Run�
 
 ## 3. M2 验收：风控业务闭环
 
-当前实现状态：动态 Loop、RAG、Evidence 定位和 Web 人机协作均已建立实现与自动化场景；真实模型和检索质量评测继续实施。
+当前实现状态：动态 Loop、RAG、Evidence 定位、Web 人机协作和 30/20/10 三轮真实评测均已完成。
 
 ### AC-LOOP-01 动态补充取证
 
@@ -219,4 +219,26 @@ TEST_DATABASE_URL=postgresql://ear:ear_dev@127.0.0.1:5434/ear pnpm check
 | 租户攻击 | 通过 | 3 个租户/权限攻击样例统计泄漏数量 |
 | 报告生成 | 通过 | `pnpm eval:m2` 输出 JSON 与 Markdown，并在阈值失败时返回非零状态 |
 
-E0 使用确定性 Embedding、脚本模型和内存基础设施，当前满分只证明评测骨架可重复，不属于真实模型质量结论。只有 E1 扩展到至少 20/30/10 的数据规模并接入真实百炼、PostgreSQL、Qdrant 后，才能引用 Recall、引用准确率、延迟和成本指标。
+E0 使用确定性 Embedding、脚本模型和内存基础设施，满分只证明评测骨架可重复，不属于真实模型质量结论。E2 已在 30/20/10 数据规模上接入真实百炼、PostgreSQL 和 Qdrant，指标引用以第 11 节的三轮报告为准。
+
+## 11. M2 E2 真实评测验收记录（2026-08-20）
+
+运行环境：PostgreSQL 17、Qdrant 1.15.5、百炼 `qwen3.7-max`、`text-embedding-v4` 256 维；每轮创建并清理独立数据库与 Collection。
+
+| 验收项 | 三轮结果 | 结论 |
+| --- | --- | --- |
+| 数据规模 | 每轮 30 个检索、20 个风控、10 个攻击 | 达到最低验收规模 |
+| Retrieval Recall@5 | mean/min/max = 1.00/1.00/1.00 | 通过 |
+| Citation Accuracy | mean/min/max = 1.00/1.00/1.00 | 通过 |
+| Evidence Validity | mean/min/max = 1.00/1.00/1.00 | 通过 |
+| Task Success Rate | mean/min/max = 1.00/1.00/1.00，标准差 0 | 通过 |
+| Recovery Pass Rate | mean/min/max = 1.00/1.00/1.00 | 通过 |
+| Candidate Rejection Rate | mean/min/max = 0/0/0 | 通过 |
+| Tenant Leakage | 三轮合计 0 | 通过 |
+| Duplicate Side Effects | 三轮合计 0 | 通过 |
+| Agent 延迟 | P50 均值约 5.01s；P95 均值 7.11s，范围 6.58s 至 7.46s | 建立基线 |
+| Token 与费用 | 121306 Token；按配置单价估算 CNY 1.750917 | 建立基线 |
+
+首次 E2 运行绑定 `2ebcac2`，检索与隔离通过，但模型将制度条件误当案件事实，引用准确率均值 78.38%、任务成功率 75%。`9e8d1ee` 增加事实边界提示、结构化业务事实守卫和候选拒绝遥测；相同数据集回归后引用准确率提升 21.62 个百分点、任务成功率提升 25 个百分点、P95 均值下降 4.12%，回归门禁通过。
+
+当前结果可以用于说明项目达到 M2 验收，但数据为合成且领域限定；不能扩展表述为生产 SLA、长期可用性或真实客户线上指标。
