@@ -4,15 +4,15 @@
 
 ## 1. AI 全栈工程师版本
 
-### 企业 Agent Runtime 与 PaaS 智能业务执行平台
+### 企业级多租户 Agent Runtime 与智能风控执行平台
 
 技术栈：TypeScript、Fastify、React、LangGraph、PostgreSQL、Qdrant、MCP、Zod、SSE、Docker
 
-- 独立设计并实现面向企业 PaaS 的多租户 Agent Runtime，以项目风控/供应商尽调为主业务，贯通动态规划、受控工具调用、Evidence/Finding、人工审批和幂等业务写回，并通过合同合规 Agent 验证 Runtime 跨业务复用。
-- 基于 LangGraph 实现 `plan -> collect -> evaluate -> replan` 受约束动态 Loop，将模型决策与确定性控制面分离；通过工具白名单、三轮上限、预算、Zod 结构化校验和 Evidence 引用守卫限制幻觉与非法计划。
-- 建设 Tool Registry 治理内核，统一处理输入输出 Schema、JWT Scope、对象权限、超时、审计、审批凭据和幂等键；从脱敏 PaaS 元数据编译 get/create/update Tool Schema，并通过官方 MCP SDK 复用同一执行入口。
-- 使用 PostgreSQL 持久化 Run、checkpoint、事件、审批与审计，使用 sequence 事件日志支持 SSE 断线补发；针对并发审批和“下游成功/状态回写失败”故障窗口实现恢复与最多一次受测副作用。
-- 搭建 PostgreSQL Outbox + Qdrant 的多租户知识检索链路，Evidence 保存文档版本与原文定位；构建百炼真实模型三轮 30/20/10 合成评测，租户泄漏和重复副作用均为 0，P95 均值 7.11s，并将引用准确率从 78.38% 回归至 100%。
+- 独立设计并实现面向企业 PaaS 的多租户 Agent Runtime，以供应商准入/项目风控为标杆场景：受控读取项目、供应商、企业风险、流水及制度知识，输出带证据的风险结论，经人工审批后幂等创建整改任务；新增合同合规 Agent 时复用同一运行内核，验证平台跨业务扩展能力。
+- **受控 Agent 执行：**基于 LangGraph 实现 `plan -> collect -> evaluate -> replan` 有界动态 Loop，将大模型限定为“候选计划与结论生成器”，由确定性控制面执行工具白名单、参数构造、三轮/预算上限、Zod Schema 及 Evidence 引用校验，阻断越权工具、非法计划和无证据结论。
+- **可信多租户 RAG：**以 PostgreSQL 管理制度版本、Chunk、权限标签和 Outbox，异步写入 Qdrant 可重建向量索引；检索时按可信租户与权限过滤，并回查活动文档版本，Evidence 保留文档版本、章节、Chunk 和行号定位。真实模型首轮评测发现“制度条件被误判为案件事实”，增加事实边界守卫后，限定 E2 数据集引用准确率由 78.38% 提升至 100%。
+- **可靠审批与业务写回：**持久化 Run、checkpoint、顺序事件、审批、工具审计和幂等记录；通过审批状态竞争控制、稳定幂等键和启动恢复，处理重复审批及“下游已成功、Run 状态未落库”的故障窗口；Web/RN 客户端基于 SSE sequence 游标补发并去重，保证断线与前后台切换后状态连续。
+- **平台治理与工程验证：**建设 Tool Registry，统一输入输出 Schema、JWT Scope、对象权限、超时、审计、审批凭据和幂等策略，并从脱敏 PaaS 元数据编译工具、通过官方 MCP SDK 暴露同一治理入口；完成百炼 + PostgreSQL + Qdrant 三轮 E2 评测（每轮 30 个检索问题、20 个风控案件、10 个越权攻击），租户泄漏与重复副作用均为 0，Agent P95 均值 7.11s。
 
 项目边界：公开项目使用脱敏/Mock PaaS Gateway 与合成数据；上述准确率是限定评测集结果，不代表生产 SLA。
 
@@ -46,4 +46,18 @@ Scope note: quality numbers are from domain-scoped synthetic evaluation data and
 
 ## 4. 一分钟项目介绍
 
-这是一个面向企业 PaaS 的 Agent 执行与治理平台，首个业务是供应商准入尽调。与聊天机器人不同，它需要受控读取项目、供应商、信用、流水和制度数据，生成带原文引用的风险结论，等待人工审批后再幂等写回整改任务。平台层实现了 Run/checkpoint、事件回放、Tool Registry、权限审计、Evidence、审批和幂等；业务层有动态风控 Agent 和轻量合同 Agent；客户端有 React 工作台及框架无关的 Web/RN SDK。项目还通过真实百炼、PostgreSQL 和 Qdrant 建立了可追溯评测，既验证质量，也主动暴露并修复了“把制度条件误当案件事实”的问题。
+这是一个面向企业 PaaS 的多租户 Agent 执行与治理平台，首个标杆业务是供应商准入和项目风控。它不是给用户聊天，而是受控读取项目、供应商、企业风险、流水和制度知识，形成带原文定位的风险结论，经人工审批后创建整改任务。
+
+项目最核心的设计原则是：模型负责生成候选计划和判断，确定性代码掌握执行权。为此我实现了三条关键链路：第一，LangGraph 有界动态 Loop 与 Tool Registry，控制工具、权限、预算和输出；第二，PostgreSQL Outbox + Qdrant 的版本化多租户 RAG，把每条 Finding 追溯到 Evidence 原文；第三，Run/checkpoint、审批竞争、幂等写回和 SSE 事件补发，使流程在重复操作、服务重启及客户端断线后仍可恢复。
+
+为了证明这不是单场景 Demo，我又接入了合同合规 Agent，并让 Web/RN 共用同一 Run/Event 协议。最后用真实百炼模型、PostgreSQL 和 Qdrant 做三轮 E2 评测；评测曾发现模型把制度规范误当成案件事实，我通过事实边界守卫和回归门禁把限定数据集的引用准确率从 78.38% 提升到 100%。
+
+## 5. 面试展开主线
+
+面试时不要按模块罗列功能，围绕下面三个问题展开：
+
+1. **模型输出为什么敢执行？** 讲 LangGraph 有界 Loop、Tool Registry、可信上下文、Schema、Evidence Guard，以及“模型提议、代码裁决”的边界。
+2. **RAG 结果为什么可信且不串租户？** 讲文档版本、权限标签、PostgreSQL Outbox、Qdrant 过滤、活动版本回查、Evidence locator，以及制度规范/案件事实边界。
+3. **审批和写回失败后为什么不重复？** 讲 checkpoint、审批竞争、稳定幂等键、故障窗口恢复、sequence 事件日志与客户端游标补发。
+
+平台级能力作为第四层证明：Risk Agent 与 Contract Agent 只实现各自的计划、工具和规则，复用 Run、Event、Evidence、Approval、Tool Registry、MCP 和客户端协议；这说明抽象边界经过第二业务验证，而不是预先设计出来的空壳。
