@@ -164,12 +164,12 @@ JWT 验证
 
 ## 11. 当前实现差距
 
-当前代码已经具备 PostgreSQL 版 Runtime、Tool Registry、Event Store、JWT、持久化 checkpoint、Evidence/Finding、审批竞争、状态转换审计、对象权限策略和启动恢复扫描。尚未满足的目标边界如下：
+当前代码已经具备 PostgreSQL 版 Runtime、Tool Registry、Event Store、JWT、持久化 checkpoint、Evidence/Finding、审批竞争、状态转换审计、对象权限策略、启动恢复扫描、PaaS 元数据工具编译器和 MCP 适配层。尚未满足的目标边界如下：
 
 - 对象权限已采用 `appName/metaName/action/objectId` 策略接口，当前规则实现用于开发和测试，真实 PaaS 权限客户端待接入。
 - 自动恢复当前由 API 启动扫描触发，多副本协调租约和周期 worker 尚未实现。
 - Run、事件和业务产物目前分别提交，尚未形成统一事务/Outbox 协调。
 - 项目、供应商、企业风险、流水和写回工具仍为确定性 Mock；制度检索已接入可切换的内存/Qdrant 实现。
-- 动态规划、Qdrant 适配与 Web 工作台已实现；MCP、RN SDK、第二 Agent 和真实质量评测尚未实现。
+- 动态规划、Qdrant 适配、Web 工作台、验收规模真实质量评测、元数据工具和 MCP 已实现；RN SDK、第二 Agent 和真实 PaaS Gateway 尚未实现。
 
 任何简历和演示材料必须区分“已实现”与“目标设计”。

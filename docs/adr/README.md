@@ -11,5 +11,6 @@ ADR 记录已经接受的架构决策。`Accepted` 表示团队接受该方向�
 | [0005](0005-replayable-sse-events.md) | 持久化事件日志与可回放 SSE | Accepted |
 | [0006](0006-multitenant-defense-in-depth.md) | JWT 之外的多租户纵深防御 | Accepted |
 | [0007](0007-web-server-state-and-event-projection.md) | Web 服务端状态与 SSE 事件投影分离 | Accepted |
+| [0008](0008-paas-metadata-compiler-and-trusted-mcp-context.md) | PaaS 元数据编译器与可信 MCP 上下文 | Accepted |
 
 新决策需要说明上下文、选择、后果、替代方案和可验证条件。已接受 ADR 不直接覆写结论；方向变化时新增 ADR 取代旧记录。

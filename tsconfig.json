@@ -21,8 +21,10 @@
       "@ear/persistence": ["packages/persistence/src/index.ts"],
       "@ear/model-provider": ["packages/model-provider/src/index.ts"],
       "@ear/retrieval": ["packages/retrieval/src/index.ts"],
+      "@ear/paas-metadata": ["packages/paas-metadata/src/index.ts"],
+      "@ear/paas-mcp-server": ["mcp-servers/paas-tools/src/index.ts"],
       "@ear/risk-agent": ["agents/risk-agent/src/index.ts"]
     }
   },
-  "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "agents/**/*.ts", "evals/**/*.ts", "__tests__/**/*.ts", "drizzle.config.ts", "vitest.config.ts"]
+  "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "agents/**/*.ts", "mcp-servers/**/*.ts", "evals/**/*.ts", "__tests__/**/*.ts", "drizzle.config.ts", "vitest.config.ts"]
 }

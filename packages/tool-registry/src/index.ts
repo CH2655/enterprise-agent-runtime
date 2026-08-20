@@ -58,12 +58,23 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
   name: string;
   description: string;
   access: "read" | "write";
+  exposure?: ToolExposureChannel[];
   requiredScopes?: string[];
   permission?: (input: TInput) => ObjectPermissionRequest;
   inputSchema: z.ZodType<TInput>;
   outputSchema: z.ZodType<TOutput>;
   timeoutMs?: number;
   execute(input: TInput, context: ToolContext): Promise<TOutput>;
+}
+
+export type ToolExposureChannel = "mcp";
+
+export interface ExposedToolDefinition {
+  name: string;
+  description: string;
+  access: "read" | "write";
+  inputSchema: z.ZodType;
+  outputSchema: z.ZodType;
 }
 
 export interface ToolAuditRecord {
@@ -179,6 +190,18 @@ export class ToolRegistry {
       description,
       access,
     }));
+  }
+
+  listExposed(channel: ToolExposureChannel): ExposedToolDefinition[] {
+    return [...this.tools.values()]
+      .filter((tool) => tool.exposure?.includes(channel))
+      .map(({ name, description, access, inputSchema, outputSchema }) => ({
+        name,
+        description,
+        access,
+        inputSchema,
+        outputSchema,
+      }));
   }
 
   async execute<TOutput>(

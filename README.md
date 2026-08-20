@@ -2,7 +2,7 @@
 
 面向企业 PaaS 的多租户 Agent 执行与治理项目，以“项目风控与供应商准入尽调”为首个标杆业务，目标是让 AI 能够受控读取企业数据、生成可追溯结论、等待人工审批并安全回写业务系统。
 
-> 当前仓库已完成 M1 可靠 Runtime，并完成 M2 风控业务的后端与 Web 人机协作闭环。E0 已建立版本化评测集、确定性运行器和指标报告；真实百炼模型、真实 Qdrant 质量基线仍属于后续工作。
+> 当前仓库已完成 M1 可靠 Runtime 和 M2 风控业务闭环，并通过三轮 E2 百炼/Qdrant 验收规模评测。M3 已完成 PaaS 元数据工具编译器与 MCP 协议闭环，RN SDK 和第二业务 Agent 仍在实施中。
 
 ## 产品闭环
 
@@ -24,6 +24,9 @@
 - LangGraph 风控状态图：取证、覆盖评估、结论生成和引用校验。
 - Agent Registry 与 Repository 抽象，业务 Agent、平台内核和持久化实现分离。
 - Tool Registry：Zod 输入输出校验、Scope 校验、可信租户上下文、写工具审批、持久化幂等、超时和审计。
+- PaaS 元数据工具编译器：依据字段类型、必填、只读、字段权限和敏感策略生成 get/create/update Tool Schema。
+- 官方 MCP TypeScript SDK 适配层：只有显式授权工具可暴露，`tools/call` 仍统一进入 Tool Registry。
+- 脱敏供应商快照与 stdio MCP 示例，读取时掩码银行账号、删除禁止字段，写入时拒绝只读和敏感字段。
 - Evidence 与 Finding 引用校验，Finding 不能引用不存在的 Evidence ID。
 - PostgreSQL 持久化 Run、Event、Approval、Evidence、Finding、Tool Invocation 和 Idempotency；事件 sequence 由数据库事务分配。
 - LangGraph `interrupt()` + PostgreSQL checkpointer，服务重建后可恢复等待审批的 Run。
@@ -60,12 +63,11 @@
 - 事件与 Run 创建、Run 状态与 Evidence/Finding 保存尚未合并为单个业务事务，故障后需要校准。
 - 对象权限接口与规则适配器已经实现，真实 PaaS 权限服务客户端尚未接入。
 - “最多一次业务副作用”依赖稳定幂等键和下游适配器遵守该键，不宣称分布式 exactly-once。
-- OpenAI 兼容 Provider 已实现但未使用百炼 Key 建立质量/延迟/成本基线；默认仍运行确定性 Provider。
 - 项目、供应商、企业风险、流水和整改写回仍为 Mock；制度检索已经接入知识库。
 - 文档解析当前支持 Markdown 章节和行号，不包含 PDF/OCR。
 - Qdrant 适配器有协议级自动化测试；尚未建立真实 Qdrant 容器的持续集成和检索质量基线。
-- OpenAI Model/Embedding Provider 已实现，但未使用真实 Key 建立质量、延迟和成本基线。
-- 只有 Risk Agent 和 Web 客户端，没有 RN 客户端和第二业务 Agent。
+- PaaS 元数据编译与 MCP 治理路径已经实现，但真实 PaaS 元数据导出接口、权限服务和业务 API Gateway 尚未接入。
+- 只有 Risk Agent 和 Web 客户端；RN SDK 和第二业务 Agent 尚未完成。
 - Web 异步启动目前使用进程内调度；API 在返回 `running` 后立刻崩溃时，缺少持久化执行队列自动接管该 Run。
 
 ## 架构原则
@@ -103,6 +105,7 @@ PostgreSQL 保存 Run、checkpoint、事件、Evidence、审批和审计事实�
 - [架构决策记录](docs/adr/README.md)
 - [实施里程碑](docs/milestones.md)
 - [验收标准](docs/acceptance-criteria.md)
+- [PaaS 元数据到 Tool 映射](docs/paas-metadata-tool-mapping.md)
 
 ## 项目结构
 
@@ -118,12 +121,14 @@ packages/auth/             JWT Claims 到可信 IdentityContext
 packages/persistence/      Drizzle Schema、PostgreSQL Repository 和审计
 packages/model-provider/   结构化模型契约、离线实现和 OpenAI Provider
 packages/retrieval/        文档分块、Embedding 编排、Outbox Worker 与 Qdrant 适配
+packages/paas-metadata/    PaaS 有效元数据校验与 Tool Schema 编译
+mcp-servers/paas-tools/    官方 MCP SDK 协议适配与 stdio 演示
 evals/                     版本化数据集、E0 运行器、指标和评测报告
 __tests__/                 工作流与平台包测试
 docs/                      PRD、架构、ADR、里程碑与验收
 ```
 
-目标结构会在对应里程碑实施时增加 `packages/rn-agent-sdk` 和 `mcp-servers/paas-tools`。
+目标结构会在后续 M3 任务中增加 `packages/rn-agent-sdk` 和 `agents/contract-agent`。
 
 ## 本地运行
 
@@ -138,6 +143,14 @@ pnpm dev:web
 ```
 
 API 默认运行在 `http://127.0.0.1:3001`，Web 工作台运行在 `http://127.0.0.1:5173`。两个开发服务分别在终端启动。
+
+本地 stdio MCP 示例从 `.env` 读取显式演示身份：
+
+```bash
+pnpm dev:mcp
+```
+
+默认 `supplier:read` Scope 可调用 `paas_supplier_get` 读取 `SUP-001`。写工具还需要 `supplier:write`、`MCP_APPROVED_BY` 和稳定的 `MCP_IDEMPOTENCY_KEY`；这些环境身份只用于本地演示，生产 Transport 必须使用已验证 Token。
 
 PostgreSQL 与 Qdrant 本地环境准备：
 
@@ -243,8 +256,8 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
-- M2：进行中；业务闭环与 E0 评测骨架已完成，真实百炼/Qdrant 质量、延迟和成本基线待实现。
-- M3：PaaS 元数据工具、MCP、RN SDK 和第二 Agent。
+- M2：已完成；业务闭环与 E2 三轮验收规模真实评测已固化。
+- M3：进行中；PaaS 元数据工具和 MCP 已完成，RN SDK 和第二 Agent 待实现。
 - M4：评测固化与面试交付。
 
 只有通过对应[验收标准](docs/acceptance-criteria.md)的能力，才能进入简历成果描述。

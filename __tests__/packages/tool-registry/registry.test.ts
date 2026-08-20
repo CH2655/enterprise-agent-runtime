@@ -140,4 +140,21 @@ describe("ToolRegistry", () => {
     expect(first).toEqual(second);
     expect(execute).toHaveBeenCalledTimes(1);
   });
+
+  it("只应向MCP目录暴露显式授权的工具", () => {
+    const registry = new ToolRegistry();
+    const definition = {
+      description: "读取对象",
+      access: "read" as const,
+      inputSchema: z.object({ code: z.string() }),
+      outputSchema: z.object({ ok: z.boolean() }),
+      async execute() {
+        return { ok: true };
+      },
+    };
+    registry.register({ ...definition, name: "internal_only" });
+    registry.register({ ...definition, name: "mcp_read", exposure: ["mcp"] });
+
+    expect(registry.listExposed("mcp").map((tool) => tool.name)).toEqual(["mcp_read"]);
+  });
 });

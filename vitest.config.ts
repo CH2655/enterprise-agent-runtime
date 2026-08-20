@@ -16,6 +16,8 @@ export default defineConfig({
       "@ear/persistence": source("./packages/persistence/src/index.ts"),
       "@ear/model-provider": source("./packages/model-provider/src/index.ts"),
       "@ear/retrieval": source("./packages/retrieval/src/index.ts"),
+      "@ear/paas-metadata": source("./packages/paas-metadata/src/index.ts"),
+      "@ear/paas-mcp-server": source("./mcp-servers/paas-tools/src/index.ts"),
       "@ear/risk-agent": source("./agents/risk-agent/src/index.ts"),
     },
   },
