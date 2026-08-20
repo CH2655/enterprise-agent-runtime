@@ -18,6 +18,12 @@
 
 该项目不是聊天机器人或通用 Coze 平台。Runtime 提供跨业务、跨终端复用的执行治理能力；Risk Agent 是第一个业务实现；Web 和 RN 是同一 Run/Event 协议的客户端。
 
+## 界面预览
+
+![风控 Agent 工作台](docs/assets/workbench-risk.jpg)
+
+![跨端生命周期恢复实验台](docs/assets/lifecycle-recovery.jpg)
+
 ## 当前已实现
 
 - TypeScript + Fastify API 和 pnpm Monorepo。
@@ -111,6 +117,11 @@ PostgreSQL 保存 Run、checkpoint、事件、Evidence、审批和审计事实�
 - [PaaS 元数据到 Tool 映射](docs/paas-metadata-tool-mapping.md)
 - [React Native Agent SDK 接入](docs/rn-agent-sdk-integration.md)
 - [合同合规 Agent 复用证明](docs/contract-agent-reuse.md)
+- [面试演示手册](docs/interview-demo.md)
+- [面试架构图集](docs/interview-diagrams.md)
+- [面试深挖手册](docs/interview-guide.md)
+- [评测指标溯源](docs/evaluation-summary.md)
+- [AI 前端/全栈简历项目描述](docs/resume-project.md)
 
 ## 项目结构
 
@@ -150,6 +161,15 @@ pnpm dev:web
 ```
 
 API 默认运行在 `http://127.0.0.1:3001`，Web 工作台运行在 `http://127.0.0.1:5173`。两个开发服务分别在终端启动。
+
+面试演示推荐使用一键启动。快速模式不需要 Docker 或模型 Key；完整模式会准备 PostgreSQL、Qdrant 和迁移。两种模式都会创建固定、可重复执行的演示数据：
+
+```bash
+pnpm demo
+pnpm demo:full
+```
+
+端口冲突时使用 `pnpm demo -- --api-port=3101 --web-port=5181`。详细流程见[面试演示手册](docs/interview-demo.md)。
 
 本地 stdio MCP 示例从 `.env` 读取显式演示身份：
 
@@ -265,6 +285,6 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
 - M2：已完成；业务闭环与 E2 三轮验收规模真实评测已固化。
 - M3：已完成；PaaS 元数据工具、MCP、跨端 SDK、Web 生命周期实验台、架构边界测试和合同 Agent 已通过工程验收。
-- M4：评测固化与面试交付。
+- M4：第一版已完成；一键 Demo、固定数据、关键截图、演示脚本、架构图集、指标溯源、面试手册和中英文简历描述均已固化。
 
 只有通过对应[验收标准](docs/acceptance-criteria.md)的能力，才能进入简历成果描述。
