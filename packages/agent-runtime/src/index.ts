@@ -76,6 +76,11 @@ export interface AgentRunStore {
   create(record: AgentRunRecord, transition: NewAgentRunTransition): Promise<void>;
   save(record: AgentRunRecord, transition: NewAgentRunTransition): Promise<void>;
   get(id: string): Promise<AgentRunRecord | undefined>;
+  listByTenant(input: {
+    tenantId: string;
+    status?: AgentRunStatus;
+    limit: number;
+  }): Promise<AgentRunRecord[]>;
   listTransitions(runId: string, tenantId: string): Promise<AgentRunTransitionRecord[]>;
   requestApproval(input: {
     runId: string;
@@ -149,6 +154,20 @@ export class InMemoryAgentRunStore implements AgentRunStore {
 
   async get(id: string): Promise<AgentRunRecord | undefined> {
     return this.runs.get(id);
+  }
+
+  async listByTenant(input: {
+    tenantId: string;
+    status?: AgentRunStatus;
+    limit: number;
+  }): Promise<AgentRunRecord[]> {
+    return [...this.runs.values()]
+      .filter((run) =>
+        run.tenantId === input.tenantId &&
+        (input.status === undefined || run.status === input.status),
+      )
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .slice(0, input.limit);
   }
 
   async listTransitions(runId: string, tenantId: string): Promise<AgentRunTransitionRecord[]> {
@@ -234,7 +253,35 @@ export class AgentRuntime {
     return this.agents.list();
   }
 
+  async listRuns(
+    identity: AgentIdentity,
+    input: { status?: AgentRunStatus; limit: number },
+  ): Promise<AgentRunRecord[]> {
+    return this.runs.listByTenant({
+      tenantId: identity.tenantId,
+      ...(input.status ? { status: input.status } : {}),
+      limit: input.limit,
+    });
+  }
+
   async start(agentId: string, rawInput: unknown, identity: AgentIdentity) {
+    const execution = await this.initializeRun(agentId, rawInput, identity);
+    return this.executeInitial(execution);
+  }
+
+  async startAsync(agentId: string, rawInput: unknown, identity: AgentIdentity) {
+    const execution = await this.initializeRun(agentId, rawInput, identity);
+    setTimeout(() => {
+      void this.executeInitial(execution).catch(() => undefined);
+    }, 0);
+    return execution.initial;
+  }
+
+  private async initializeRun(
+    agentId: string,
+    rawInput: unknown,
+    identity: AgentIdentity,
+  ) {
     const definition = this.agents.get(agentId);
     const input = definition.inputSchema.parse(rawInput);
     const runId = randomUUID();
@@ -269,7 +316,13 @@ export class AgentRuntime {
       type: "run.created",
       payload: { agentId, version: definition.version },
     });
+    return { definition, input, identity, initial, context };
+  }
 
+  private async executeInitial(execution: Awaited<ReturnType<AgentRuntime["initializeRun"]>>) {
+    const { definition, input, identity, initial, context } = execution;
+    const runId = initial.id;
+    const agentId = initial.agentId;
     try {
       const result = await definition.start(input, context);
       const record: AgentRunRecord = {

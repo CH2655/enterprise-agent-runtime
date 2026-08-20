@@ -6,7 +6,7 @@ import {
 } from "@ear/agent-runtime";
 import { InMemoryAgentEventStore } from "@ear/agent-protocol";
 import { identityFromJwtClaims } from "@ear/auth";
-import { AgentIdentitySchema } from "@ear/domain";
+import { AgentIdentitySchema, AgentRunStatusSchema } from "@ear/domain";
 import {
   DeterministicEmbeddingProvider,
   type EmbeddingProvider,
@@ -33,8 +33,13 @@ const startRunBody = z.object({
   agentId: z.string().min(1),
   input: z.unknown(),
 });
+const startRunQuery = z.object({ mode: z.enum(["sync", "async"]).default("sync") });
 
 const runParams = z.object({ runId: z.string().uuid() });
+const listRunsQuery = z.object({
+  status: AgentRunStatusSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
 const ingestKnowledgeBody = z.object({
   documentKey: z.string().min(1),
   version: z.number().int().positive(),
@@ -159,8 +164,20 @@ export function createApp(options: CreateAppOptions = {}) {
 
   app.post("/api/runs", async (request, reply) => {
     const body = startRunBody.parse(request.body);
-    const run = await runtime.start(body.agentId, body.input, await identityFrom(request, auth));
-    return reply.code(201).send(run);
+    const query = startRunQuery.parse(request.query);
+    const identity = await identityFrom(request, auth);
+    const run = query.mode === "async"
+      ? await runtime.startAsync(body.agentId, body.input, identity)
+      : await runtime.start(body.agentId, body.input, identity);
+    return reply.code(query.mode === "async" ? 202 : 201).send(run);
+  });
+
+  app.get("/api/runs", async (request) => {
+    const identity = await identityFrom(request, auth);
+    requireScope(identity.scopes, "risk:read");
+    const query = listRunsQuery.parse(request.query);
+    const runs = await runtime.listRuns(identity, query);
+    return runs.map(toRunSummary);
   });
 
   app.get("/api/runs/:runId", async (request) => {
@@ -195,10 +212,22 @@ export function createApp(options: CreateAppOptions = {}) {
       "cache-control": "no-cache",
       connection: "keep-alive",
     });
-    for (const event of await events.replay(runId, query.after)) {
+    let replaying = true;
+    const buffered: Array<Awaited<ReturnType<typeof events.replay>>[number]> = [];
+    const unsubscribe = events.subscribe(runId, (event) => {
+      if (replaying) buffered.push(event);
+      else reply.raw.write(toSse(event));
+    });
+    const replayed = await events.replay(runId, query.after);
+    const catchUp = new Map(
+      [...replayed, ...buffered]
+        .filter((event) => event.sequence > query.after)
+        .map((event) => [event.sequence, event]),
+    );
+    for (const event of [...catchUp.values()].sort((left, right) => left.sequence - right.sequence)) {
       reply.raw.write(toSse(event));
     }
-    const unsubscribe = events.subscribe(runId, (event) => reply.raw.write(toSse(event)));
+    replaying = false;
     request.raw.on("close", unsubscribe);
   });
 
@@ -246,6 +275,39 @@ function requireScope(scopes: string[] | undefined, required: string): void {
   if (!scopes?.includes(required)) {
     throw new ToolAuthorizationError(`Missing scope: ${required}`);
   }
+}
+
+function toRunSummary(run: {
+  id: string;
+  agentId: string;
+  agentVersion: string;
+  userId: string;
+  status: string;
+  input: unknown;
+  state: unknown;
+  createdAt: string;
+  updatedAt: string;
+}) {
+  const state = run.state as {
+    coverage?: number;
+    evidence?: unknown[];
+    findings?: unknown[];
+  };
+  return {
+    id: run.id,
+    agentId: run.agentId,
+    agentVersion: run.agentVersion,
+    userId: run.userId,
+    status: run.status,
+    input: run.input,
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt,
+    summary: {
+      coverage: state.coverage ?? 0,
+      evidenceCount: state.evidence?.length ?? 0,
+      findingCount: state.findings?.length ?? 0,
+    },
+  };
 }
 
 function toSse(value: unknown): string {

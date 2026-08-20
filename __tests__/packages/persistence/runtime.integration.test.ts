@@ -278,6 +278,10 @@ class FailOnceOnCompletedRunStore implements AgentRunStore {
     return this.delegate.get(id);
   }
 
+  listByTenant(input: Parameters<AgentRunStore["listByTenant"]>[0]) {
+    return this.delegate.listByTenant(input);
+  }
+
   listTransitions(runId: string, tenantId: string): Promise<AgentRunTransitionRecord[]> {
     return this.delegate.listTransitions(runId, tenantId);
   }

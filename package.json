@@ -9,6 +9,9 @@
   },
   "scripts": {
     "dev": "tsx apps/api/src/main.ts",
+    "dev:api": "tsx apps/api/src/main.ts",
+    "dev:web": "pnpm --filter @ear/web dev",
+    "build:web": "pnpm --filter @ear/web build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:up": "docker compose up -d postgres qdrant",

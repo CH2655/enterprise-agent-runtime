@@ -43,7 +43,7 @@ const vectorIndex = process.env.QDRANT_URL
       ...(process.env.QDRANT_API_KEY ? { apiKey: process.env.QDRANT_API_KEY } : {}),
     })
   : undefined;
-const { app } = createApp({
+const runtimeApp = createApp({
   auth,
   infrastructure,
   modelProvider,
@@ -52,7 +52,12 @@ const { app } = createApp({
   useKnowledgeSearchTool: true,
   knowledgeIndexIntervalMs: Number(process.env.KNOWLEDGE_INDEX_INTERVAL_MS ?? 2_000),
 });
+const { app } = runtimeApp;
 const port = Number(process.env.PORT ?? 3001);
+
+if (authMode === "demo" && process.env.SEED_DEMO_DATA !== "false") {
+  await seedDemoKnowledge(runtimeApp);
+}
 
 await app.listen({ host: "127.0.0.1", port });
 console.log(`Enterprise Agent Runtime API: http://127.0.0.1:${port}`);
@@ -61,4 +66,48 @@ function requiredEnvironment(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
+}
+
+async function seedDemoKnowledge(runtime: ReturnType<typeof createApp>): Promise<void> {
+  const documents = [
+    {
+      tenantId: "tenant-a",
+      userId: "demo-admin-a",
+      documentKey: "supplier-policy",
+      version: 1,
+      title: "供应商准入与风险复核制度",
+      content: [
+        "# 高风险供应商",
+        "存在失信记录或重大资金异常的供应商必须进入人工复核。",
+        "",
+        "## 整改要求",
+        "复核通过后应创建整改任务，并持续核验异常交易用途。",
+      ].join("\n"),
+      permissionTags: ["risk_reviewer"],
+    },
+    {
+      tenantId: "tenant-b",
+      userId: "demo-admin-b",
+      documentKey: "supplier-policy",
+      version: 1,
+      title: "供应商分级管理办法",
+      content: [
+        "# 供应商分级",
+        "一般信用异常可由业务负责人补充说明后进入准入评估。",
+        "",
+        "## 资金核验",
+        "重大资金异常仍需提交风控负责人复核。",
+      ].join("\n"),
+      permissionTags: ["risk_reviewer"],
+    },
+  ];
+  for (const document of documents) {
+    const existing = await runtime.infrastructure.knowledge.getDocumentVersion(
+      document.tenantId,
+      document.documentKey,
+      document.version,
+    );
+    if (!existing) await runtime.knowledgeIngestion.ingest(document);
+  }
+  await runtime.knowledgeWorker.runOnce();
 }

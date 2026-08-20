@@ -63,7 +63,7 @@
 
 ## M2：可演示的风控业务闭环
 
-**状态：进行中，Model Provider、动态 Loop 与 RAG 后端已完成（2026-08-19）。**
+**状态：进行中，业务与 Web 闭环已完成，真实质量评测待完成（2026-08-20）。**
 
 ### 目标
 
@@ -89,7 +89,10 @@
 - 已完成：Markdown 文档版本、Chunk、确定性/OpenAI Embedding Provider、PostgreSQL Outbox 与 Qdrant 派生索引。
 - 已完成：租户过滤、活动版本二次校验、权限标签过滤，以及包含文档版本、Chunk、章节和行号的制度 Evidence。
 - 已完成：Qdrant 故障重试、陈旧任务锁回收和归档版本乱序任务跳过。
-- 待完成：真实模型与真实 Qdrant 评测、Web 工作台和事件投影。
+- 已完成：React/Vite 工作台、租户任务列表、URL Run 恢复、Finding/Evidence 展开、审批和整改结果。
+- 已完成：TanStack Query 服务端状态、Zustand 事件投影、SSE sequence 去重和断线游标补发。
+- 已完成：Web 异步创建 Run，浏览器可在同一协议上读取执行事件并恢复最终快照。
+- 待完成：真实模型、真实 Qdrant 和固定评测集的质量/延迟/成本报告。
 
 ### 明确不做
 

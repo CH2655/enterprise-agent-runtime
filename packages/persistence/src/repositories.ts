@@ -13,7 +13,12 @@ import type {
   ApprovedRecoveryCandidate,
   NewAgentRunTransition,
 } from "@ear/agent-runtime";
-import { AgentIdentitySchema, type EvidenceRecord, type RiskFinding } from "@ear/domain";
+import {
+  AgentIdentitySchema,
+  type AgentRunStatus,
+  type EvidenceRecord,
+  type RiskFinding,
+} from "@ear/domain";
 import type {
   IngestKnowledgeInput,
   KnowledgeChunk,
@@ -28,7 +33,7 @@ import type {
   ToolAuditSink,
   ToolIdempotencyStore,
 } from "@ear/tool-registry";
-import { and, asc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
 import type { AgentDatabase } from "./index.js";
 import {
   agentEvents,
@@ -282,6 +287,25 @@ export class PostgresAgentRunStore implements AgentRunStore {
   async get(id: string): Promise<AgentRunRecord | undefined> {
     const [row] = await this.db.select().from(agentRuns).where(eq(agentRuns.id, id)).limit(1);
     return row ? fromRunRow(row) : undefined;
+  }
+
+  async listByTenant(input: {
+    tenantId: string;
+    status?: AgentRunStatus;
+    limit: number;
+  }): Promise<AgentRunRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(agentRuns)
+      .where(
+        and(
+          eq(agentRuns.tenantId, input.tenantId),
+          input.status ? eq(agentRuns.status, input.status) : undefined,
+        ),
+      )
+      .orderBy(desc(agentRuns.updatedAt))
+      .limit(input.limit);
+    return rows.map(fromRunRow);
   }
 
   async listTransitions(

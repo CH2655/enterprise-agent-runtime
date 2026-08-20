@@ -34,6 +34,7 @@ describe("Knowledge Retrieval", () => {
       startLine: 4,
       endLine: 5,
     });
+    expect(chunks[0]).toMatchObject({ startLine: 1, endLine: 2 });
   });
 
   it("应隔离租户并在发布新版本后只检索活动版本", async () => {

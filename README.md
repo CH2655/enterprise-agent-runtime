@@ -2,7 +2,7 @@
 
 面向企业 PaaS 的多租户 Agent 执行与治理项目，以“项目风控与供应商准入尽调”为首个标杆业务，目标是让 AI 能够受控读取企业数据、生成可追溯结论、等待人工审批并安全回写业务系统。
 
-> 当前仓库已完成 M1 可靠 Runtime，并完成 M2 的动态 Agent 与知识检索后端：PostgreSQL 持久化、JWT 身份、LangGraph checkpoint、受约束动态规划、文档版本、Outbox、Embedding、Qdrant 适配和可定位 Evidence 已实现。Web、MCP、RN SDK、第二 Agent 及真实模型质量评测仍属于后续工作。
+> 当前仓库已完成 M1 可靠 Runtime，并完成 M2 风控业务的后端与 Web 人机协作闭环：动态规划、知识检索、可定位 Evidence、任务列表、执行时间线和审批写回均已实现。MCP、RN SDK、第二 Agent 及真实模型/检索质量评测仍属于后续工作。
 
 ## 产品闭环
 
@@ -44,6 +44,11 @@
 - Qdrant REST 适配器：集合维度校验、`tenant_id` 租户索引、租户过滤、文档版本替换与向量查询。
 - Risk Agent 的制度工具接入真实 Knowledge Search，Evidence 保存文档 ID、版本、Chunk、章节和行号 locator。
 - 检索 API 按可信身份注入租户，并在 PostgreSQL 活动版本校验后执行权限标签过滤。
+- React + Vite 风控工作台：租户任务列表、状态筛选、URL Run 恢复、风险报告、Evidence 原文、审批与整改结果。
+- TanStack Query 管理服务端 Run 快照，Zustand 只保存 SSE 连接、事件序列和时间线投影。
+- Web 使用带身份 Header 的流式 `fetch` 消费 SSE；历史回放与实时事件按 `sequence` 去重，断线后从游标补发。
+- Web 创建 Run 使用异步模式立即返回 `running`；同步模式继续保留给测试和内部调用。
+- Demo 模式自动为两个租户建立内容冲突的制度，便于验证向量检索隔离。
 - 自动化测试覆盖重启恢复、审批并发、崩溃窗口、动态补取、非法计划、有界终止、跨租户检索、版本切换、Outbox 重试和 Evidence 定位。
 
 ## 当前限制
@@ -59,7 +64,8 @@
 - 文档解析当前支持 Markdown 章节和行号，不包含 PDF/OCR。
 - Qdrant 适配器有协议级自动化测试；尚未建立真实 Qdrant 容器的持续集成和检索质量基线。
 - OpenAI Model/Embedding Provider 已实现，但未使用真实 Key 建立质量、延迟和成本基线。
-- 只有 Risk Agent，没有 Web/RN 客户端和第二业务 Agent。
+- 只有 Risk Agent 和 Web 客户端，没有 RN 客户端和第二业务 Agent。
+- Web 异步启动目前使用进程内调度；API 在返回 `running` 后立刻崩溃时，缺少持久化执行队列自动接管该 Run。
 
 ## 架构原则
 
@@ -101,6 +107,7 @@ PostgreSQL 保存 Run、checkpoint、事件、Evidence、审批和审计事实�
 
 ```text
 apps/api/                  Fastify API 与依赖装配
+apps/web/                  React/Vite 风控工作台与 SSE 事件投影
 agents/risk-agent/         风控业务工作流和 Mock 工具
 packages/domain/           Evidence、Finding、Run 状态等契约
 packages/agent-runtime/    Agent 注册、Run 和审批入口
@@ -123,10 +130,11 @@ docs/                      PRD、架构、ADR、里程碑与验收
 ```bash
 pnpm install
 pnpm check
-pnpm dev
+pnpm dev:api
+pnpm dev:web
 ```
 
-API 默认运行在 `http://127.0.0.1:3001`。
+API 默认运行在 `http://127.0.0.1:3001`，Web 工作台运行在 `http://127.0.0.1:5173`。两个开发服务分别在终端启动。
 
 PostgreSQL 与 Qdrant 本地环境准备：
 
@@ -193,7 +201,7 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
-- M2：进行中；Model Provider、受约束动态 Loop、RAG 后端与可定位 Evidence 已完成，Web 工作台和评测待实现。
+- M2：进行中；Model Provider、动态 Loop、RAG 后端、Web 工作台与事件投影已完成，真实质量评测待实现。
 - M3：PaaS 元数据工具、MCP、RN SDK 和第二 Agent。
 - M4：评测固化与面试交付。
 

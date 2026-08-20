@@ -60,7 +60,7 @@ tenant-b 对 tenant-a 的以下访问全部失败且不泄漏对象内容：Run�
 
 ## 3. M2 验收：风控业务闭环
 
-当前实现状态：动态 Loop、RAG 多租户隔离、文档版本、Outbox 恢复和 Evidence 定位已建立自动化场景；真实模型评测与 Web 工作台继续实施。
+当前实现状态：动态 Loop、RAG、Evidence 定位和 Web 人机协作均已建立实现与自动化场景；真实模型和检索质量评测继续实施。
 
 ### AC-LOOP-01 动态补充取证
 
@@ -202,6 +202,8 @@ TEST_DATABASE_URL=postgresql://ear:ear_dev@127.0.0.1:5434/ear pnpm check
 | AC-RAG-02 | 通过 | 新版本归档旧版本，乱序旧任务跳过，Evidence locator 保存版本与行号 |
 | AC-RAG-03 | 通过 | 注入一次 Qdrant 故障，PostgreSQL Outbox 下一轮重试成功 |
 | AC-EVIDENCE-01/02 | 通过 | Finding 引用校验与真实制度 Evidence 定位测试 |
-| AC-WEB-01/02/03 | 未开始 | M2 下一批工作 |
+| AC-WEB-01 | 通过 | 浏览器完成创建、查看 Finding/Evidence、审批和整改写回 |
+| AC-WEB-02 | 通过 | Event Projector 对重叠、重复和乱序事件按 sequence 重建投影 |
+| AC-WEB-03 | 通过 | `/runs/:runId` 刷新后恢复快照、历史时间线和 SSE 游标 |
 
-当前结论：可以表述为“完成风控 Agent 与 RAG 后端核心链路”，尚不能表述为“完成 Web 人机协作闭环”或宣称真实检索指标达标。
+当前结论：可以表述为“完成项目风控 Agent、RAG 与 Web 人机协作闭环”；固定评测集尚未完成，不能宣称 Recall、引用正确率、真实延迟或成本指标达标。

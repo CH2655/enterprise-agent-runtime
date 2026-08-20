@@ -559,12 +559,21 @@ function parsedChunk(
   startLine: number,
   lines: string[],
 ): ParsedKnowledgeChunk {
-  const content = lines.join("\n").trim();
+  let firstContentLine = 0;
+  let lastContentLine = lines.length - 1;
+  while (firstContentLine <= lastContentLine && !lines[firstContentLine]?.trim()) {
+    firstContentLine += 1;
+  }
+  while (lastContentLine >= firstContentLine && !lines[lastContentLine]?.trim()) {
+    lastContentLine -= 1;
+  }
+  const contentLines = lines.slice(firstContentLine, lastContentLine + 1);
+  const content = contentLines.join("\n");
   return {
     ordinal,
     section,
-    startLine,
-    endLine: startLine + lines.length - 1,
+    startLine: startLine + firstContentLine,
+    endLine: startLine + lastContentLine,
     content,
     contentHash: sha256(content),
   };
