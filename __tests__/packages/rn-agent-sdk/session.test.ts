@@ -2,6 +2,9 @@ import type { AgentEvent } from "@ear/agent-protocol";
 import {
   AgentRunSession,
   FetchAgentTransport,
+  createBrowserDocumentLifecycle,
+  createJsonSessionStorage,
+  createReactNativeAppLifecycle,
   type AgentEventStreamConnection,
   type AgentRunSnapshot,
   type AgentSessionStorage,
@@ -54,6 +57,7 @@ describe("RN Agent SDK", () => {
     transport.publish(event(4, "approval.completed"));
     await waitFor(() => storage.current?.lastSequence === 4);
     expect(sequences).toEqual([1, 2, 3, 4]);
+    expect(session.snapshot().run?.status).toBe("waiting_approval");
     expect(transport.startCalls).toBe(1);
     session.dispose();
   });
@@ -145,7 +149,123 @@ describe("RN Agent SDK", () => {
       }),
     );
   });
+
+  it("应将React Native AppState适配为统一生命周期并正确释放监听", () => {
+    const appState = new FakeReactNativeAppState("active");
+    const lifecycle = createReactNativeAppLifecycle(appState);
+    const received: AppLifecycleState[] = [];
+    const unsubscribe = lifecycle.subscribe((state) => received.push(state));
+
+    appState.change("inactive");
+    appState.change("background");
+    appState.change("unknown-native-state");
+    unsubscribe();
+    appState.change("active");
+
+    expect(lifecycle.current()).toBe("active");
+    expect(received).toEqual(["inactive", "background", "background"]);
+    expect(appState.removeCalls).toBe(1);
+  });
+
+  it("应将浏览器可见性适配为前后台生命周期", () => {
+    const document = new FakeDocument();
+    const lifecycle = createBrowserDocumentLifecycle(document);
+    const received: AppLifecycleState[] = [];
+    const unsubscribe = lifecycle.subscribe((state) => received.push(state));
+
+    document.change("hidden");
+    document.change("visible");
+    unsubscribe();
+    document.change("hidden");
+
+    expect(received).toEqual(["background", "active"]);
+    expect(lifecycle.current()).toBe("background");
+  });
+
+  it("应通过命名空间持久化会话并忽略损坏数据", async () => {
+    const values = new Map<string, string>();
+    const storage = createJsonSessionStorage({
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => { values.set(key, value); },
+      removeItem: (key) => { values.delete(key); },
+    }, "test.agent");
+    const stored: StoredAgentSession = {
+      clientRequestId: "request-1",
+      agentId: "contract-agent",
+      runId: "run-1",
+      lastSequence: 4,
+    };
+
+    await storage.save("tenant-a:contract", stored);
+    expect(await storage.load("tenant-a:contract")).toEqual(stored);
+    expect(values.has("test.agent:tenant-a:contract")).toBe(true);
+
+    values.set("test.agent:tenant-a:contract", '{"lastSequence":-1}');
+    expect(await storage.load("tenant-a:contract")).toBeUndefined();
+
+    await storage.remove("tenant-a:contract");
+    expect(values.has("test.agent:tenant-a:contract")).toBe(false);
+  });
+
+  it("HTTP传输应支持宿主应用提供身份请求头", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(run()), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+    const transport = new FetchAgentTransport({
+      baseUrl: "/api",
+      getHeaders: () => ({ "x-demo-tenant": "tenant-a", "x-demo-user": "reviewer-a" }),
+      fetch: fetchMock as unknown as typeof fetch,
+    });
+
+    await transport.getRun("run-1");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/runs/run-1",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "x-demo-tenant": "tenant-a",
+          "x-demo-user": "reviewer-a",
+        }),
+      }),
+    );
+  });
 });
+
+class FakeReactNativeAppState {
+  removeCalls = 0;
+  private listener?: (state: string) => void;
+
+  constructor(public currentState: string | null) {}
+
+  addEventListener(_type: "change", listener: (state: string) => void) {
+    this.listener = listener;
+    return { remove: () => { this.removeCalls += 1; this.listener = undefined; } };
+  }
+
+  change(state: string): void {
+    this.currentState = state;
+    this.listener?.(state);
+  }
+}
+
+class FakeDocument {
+  visibilityState = "visible";
+  private listener?: () => void;
+
+  addEventListener(_type: "visibilitychange", listener: () => void): void {
+    this.listener = listener;
+  }
+
+  removeEventListener(): void {
+    this.listener = undefined;
+  }
+
+  change(state: string): void {
+    this.visibilityState = state;
+    this.listener?.();
+  }
+}
 
 class FakeLifecycle implements AppLifecycle {
   private state: AppLifecycleState = "active";

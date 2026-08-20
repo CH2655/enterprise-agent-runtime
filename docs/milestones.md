@@ -124,7 +124,7 @@
 2. 定义从 PaaS 元数据到 Tool Schema 的生成规则和字段脱敏策略。
 3. 实现 MCP Server 适配层，所有执行仍通过 Tool Registry。
 4. 实现框架无关 RN Agent SDK：JWT、Run、SSE、补发和生命周期恢复。
-5. 在 RNModules 或独立示例中完成风险摘要和移动审批接入。
+5. 通过 Web 生命周期实验台验证真实 API/SSE 恢复，并以契约测试覆盖 RN AppState 与存储适配器。
 6. 实现轻量合同合规 Agent，复用 Runtime、Evidence、Approval 和工作台时间线。
 7. 增加平台复用测试和架构依赖检查。
 
@@ -135,13 +135,14 @@
 - 已完成步骤 3：使用官方 MCP SDK 实现协议适配层，并通过内部/MCP 幂等与审计契约测试。
 - 已完成步骤 4 的 SDK 核心：JWT、Run、SSE、补发、去重和生命周期恢复已有契约测试。
 - 已完成步骤 6：合同合规 Agent 复用元数据工具、Runtime、Evidence、Approval、事件与幂等写回。
-- Web 通用任务列表、时间线、Evidence 和审批已兼容两个 Agent；步骤 5 的 RNModules 示例尚未完成，步骤 7 仍需补架构依赖检查。M3 整体仍为进行中。
+- 已完成步骤 5：Web 生命周期实验台复用真实 Contract Agent、API、审批和 SSE，展示后台暂停、游标补发、事件去重与并发创建收敛；RN AppState 和存储适配已有契约测试。
+- 已完成步骤 7：自动化测试锁定客户端 SDK、协议包和 MCP 适配层的依赖方向。M3 工程验收完成，真机系统行为保留为集成验证项。
 
 ### 退出门槛
 
 - 至少一个工具由元数据生成 Schema，而非手写全部字段。
 - 同一工具通过内部调用和 MCP 调用得到一致的权限、幂等和审计行为。
-- RN 切后台并恢复后不丢事件、不重复创建 Run。
+- 跨端 SDK 切后台并恢复后不丢事件、不展示重复事件；相同客户端请求在 Session 内不重复创建 Run。
 - Contract Agent 接入不修改 Runtime 领域模型和事件内核。
 - Web 可使用同一通用时间线展示两个 Agent。
 

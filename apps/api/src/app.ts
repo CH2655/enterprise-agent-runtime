@@ -215,6 +215,7 @@ export function createApp(options: CreateAppOptions = {}) {
       "cache-control": "no-cache",
       connection: "keep-alive",
     });
+    reply.raw.write(": connected\n\n");
     let replaying = true;
     const buffered: Array<Awaited<ReturnType<typeof events.replay>>[number]> = [];
     const unsubscribe = events.subscribe(runId, (event) => {

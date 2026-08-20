@@ -12,29 +12,23 @@
 
 服务端 Run 和事件仍是事实来源；Redux/HOC 只投影 SDK 的 `AgentSessionView` 和事件。
 
-## 2. RNModules 适配边界
+## 2. 跨端适配边界
 
-RNModules 已使用 `AppState.addEventListener('change', ...)` 和 `@hecom/storage`。接入时只需实现两个小接口：
+SDK 不导入 React Native。RNModules 将现有 `AppState` 注入适配器，存储则通过字符串存储协议接入 AsyncStorage 或宿主封装：
 
 ```ts
-const lifecycle: AppLifecycle = {
-  current: () => normalizeAppState(AppState.currentState),
-  subscribe: (listener) => {
-    const subscription = AppState.addEventListener("change", (state) => {
-      listener(normalizeAppState(state));
-    });
-    return () => subscription.remove();
-  },
-};
-
-const storage: AgentSessionStorage = {
-  load: (key) => AsyncStorage.get(["agent-runtime", key]),
-  save: (key, value) => AsyncStorage.set(["agent-runtime", key], value),
-  remove: (key) => AsyncStorage.clear(["agent-runtime", key]),
-};
+const lifecycle = createReactNativeAppLifecycle(AppState);
+const storage = createJsonSessionStorage(AsyncStorage, "agent-runtime");
 ```
 
-这些适配器留在 RNModules，Runtime 仓库不反向依赖 React Native。
+若公司存储模块不是 `getItem/setItem/removeItem` 形态，只在 RNModules 内包装这三个方法。Runtime 仓库不反向依赖 React Native 或 `@hecom/storage`。
+
+Web 可使用同一存储适配器，并选择真实浏览器生命周期或可控实验生命周期：
+
+```ts
+const lifecycle = createBrowserDocumentLifecycle(document);
+const storage = createJsonSessionStorage(localStorage);
+```
 
 ## 3. 会话使用
 
@@ -75,3 +69,14 @@ await session.start({
 - 切后台/回前台不会重新调用 `startRun()`，只会补发和重连。
 - 同一存储槽已有不同 `clientRequestId` 时拒绝覆盖，避免产生孤儿 Run。
 - 当前只保证客户端收到创建响应后的生命周期恢复。若进程在服务端创建成功、客户端保存 `runId` 前崩溃，仍需要后续增加服务端 `clientRequestId` 唯一约束才能彻底消除重复创建窗口。
+
+## 6. Web 生命周期实验台
+
+工作台右上角进入“恢复实验台”。它复用同一个 `AgentRunSession` 和 `FetchAgentTransport`，调用真实 Contract Agent：
+
+1. 新建任务时并发提交两次相同请求，验证 Session 只调用一次创建接口。
+2. 等待状态进入 `waiting_approval` 后切到后台，SSE 状态变为 `paused`。
+3. 在后台执行审批，使服务端产生客户端尚未收到的新事件。
+4. 恢复前台，从后台游标补发并显示绿色恢复事件，最终状态进入 `completed`。
+
+该实验覆盖协议和状态机，不替代真机上的网络、系统杀进程和厂商后台策略测试。

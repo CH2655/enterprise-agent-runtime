@@ -52,6 +52,75 @@ export interface AppLifecycle {
   subscribe(listener: (state: AppLifecycleState) => void): () => void;
 }
 
+export interface ReactNativeAppStateLike {
+  currentState: string | null;
+  addEventListener(
+    type: "change",
+    listener: (state: string) => void,
+  ): { remove(): void };
+}
+
+export interface BrowserDocumentLike {
+  visibilityState: string;
+  addEventListener(type: "visibilitychange", listener: () => void): void;
+  removeEventListener(type: "visibilitychange", listener: () => void): void;
+}
+
+export interface StringStorageLike {
+  getItem(key: string): string | null | Promise<string | null>;
+  setItem(key: string, value: string): void | Promise<void>;
+  removeItem(key: string): void | Promise<void>;
+}
+
+export function createReactNativeAppLifecycle(appState: ReactNativeAppStateLike): AppLifecycle {
+  return {
+    current: () => normalizeLifecycleState(appState.currentState),
+    subscribe(listener) {
+      const subscription = appState.addEventListener("change", (state) => {
+        listener(normalizeLifecycleState(state));
+      });
+      return () => subscription.remove();
+    },
+  };
+}
+
+export function createBrowserDocumentLifecycle(document: BrowserDocumentLike): AppLifecycle {
+  const current = (): AppLifecycleState => document.visibilityState === "visible" ? "active" : "background";
+  return {
+    current,
+    subscribe(listener) {
+      const onVisibilityChange = () => listener(current());
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    },
+  };
+}
+
+export function createJsonSessionStorage(
+  storage: StringStorageLike,
+  namespace = "ear.agent-session",
+): AgentSessionStorage {
+  const namespacedKey = (key: string) => `${namespace}:${key}`;
+  return {
+    async load(key) {
+      const raw = await storage.getItem(namespacedKey(key));
+      if (!raw) return undefined;
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        return isStoredAgentSession(parsed) ? parsed : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    async save(key, session) {
+      await storage.setItem(namespacedKey(key), JSON.stringify(session));
+    },
+    async remove(key) {
+      await storage.removeItem(namespacedKey(key));
+    },
+  };
+}
+
 export type AgentConnectionStatus = "idle" | "syncing" | "live" | "paused" | "reconnecting";
 
 export interface AgentSessionView {
@@ -207,7 +276,12 @@ export class AgentRunSession {
   private ingest(event: AgentEvent): void {
     if (!this.stored || event.runId !== this.stored.runId) return;
     if (event.sequence <= this.view.lastSequence) return;
-    this.view = { ...this.view, lastSequence: event.sequence };
+    const status = runStatusFromEvent(event);
+    this.view = {
+      ...this.view,
+      lastSequence: event.sequence,
+      run: status && this.view.run ? { ...this.view.run, status } : this.view.run,
+    };
     this.stored = { ...this.stored, lastSequence: event.sequence };
     const snapshot = this.stored;
     this.persistenceQueue = this.persistenceQueue
@@ -257,7 +331,8 @@ export class AgentRunSession {
 
 export interface FetchAgentTransportOptions {
   baseUrl: string;
-  getAccessToken(): string | Promise<string>;
+  getAccessToken?(): string | Promise<string>;
+  getHeaders?(): Record<string, string> | Promise<Record<string, string>>;
   fetch?: typeof fetch;
   maxSseBufferSize?: number;
 }
@@ -266,7 +341,7 @@ export class FetchAgentTransport implements AgentTransport {
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly options: FetchAgentTransportOptions) {
-    this.fetchImpl = options.fetch ?? fetch;
+    this.fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
   startRun(request: Omit<StartAgentRunRequest, "clientRequestId">): Promise<AgentRunSnapshot> {
@@ -291,11 +366,11 @@ export class FetchAgentTransport implements AgentTransport {
     onEvent(event: AgentEvent): void;
   }): Promise<AgentEventStreamConnection> {
     const controller = new AbortController();
-    const token = await this.options.getAccessToken();
+    const authHeaders = await this.authHeaders();
     const response = await this.fetchImpl(
       this.url(`/runs/${encodeURIComponent(input.runId)}/events/stream?after=${input.afterSequence}`),
       {
-        headers: { authorization: `Bearer ${token}`, accept: "text/event-stream" },
+        headers: { ...authHeaders, accept: "text/event-stream" },
         signal: controller.signal,
       },
     );
@@ -309,11 +384,11 @@ export class FetchAgentTransport implements AgentTransport {
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const token = await this.options.getAccessToken();
+    const authHeaders = await this.authHeaders();
     const response = await this.fetchImpl(this.url(path), {
       ...init,
       headers: {
-        authorization: `Bearer ${token}`,
+        ...authHeaders,
         ...(init.body ? { "content-type": "application/json" } : {}),
         ...init.headers,
       },
@@ -325,6 +400,43 @@ export class FetchAgentTransport implements AgentTransport {
   private url(path: string): string {
     return `${this.options.baseUrl.replace(/\/$/, "")}${path}`;
   }
+
+  private async authHeaders(): Promise<Record<string, string>> {
+    if (this.options.getHeaders) return this.options.getHeaders();
+    if (this.options.getAccessToken) {
+      return { authorization: `Bearer ${await this.options.getAccessToken()}` };
+    }
+    throw new Error("FetchAgentTransport requires getAccessToken or getHeaders");
+  }
+}
+
+function normalizeLifecycleState(state: string | null): AppLifecycleState {
+  if (state === "active") return "active";
+  if (state === "inactive") return "inactive";
+  return "background";
+}
+
+function isStoredAgentSession(value: unknown): value is StoredAgentSession {
+  if (!value || typeof value !== "object") return false;
+  const session = value as Partial<StoredAgentSession>;
+  return typeof session.clientRequestId === "string"
+    && session.clientRequestId.length > 0
+    && typeof session.agentId === "string"
+    && session.agentId.length > 0
+    && typeof session.runId === "string"
+    && session.runId.length > 0
+    && typeof session.lastSequence === "number"
+    && Number.isInteger(session.lastSequence)
+    && session.lastSequence >= 0;
+}
+
+function runStatusFromEvent(event: AgentEvent): AgentRunStatus | undefined {
+  if (event.type === "approval.required") return "waiting_approval";
+  if (event.type === "run.waiting_input") return "waiting_input";
+  if (event.type === "run.completed") return "completed";
+  if (event.type === "run.failed") return "failed";
+  if (event.type === "run.created" || event.type === "node.started") return "running";
+  return undefined;
 }
 
 async function consumeBody(

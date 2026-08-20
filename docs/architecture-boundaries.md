@@ -58,7 +58,7 @@ mcp-servers/
 | `model-provider` | 结构化规划和 Finding 生成 | 执行工具、审批写操作、决定租户权限 |
 | `agent-protocol` | 稳定事件契约、sequence 和回放语义 | 依赖 Web/RN 组件 |
 | `apps/web` | 人机协作、事件投影、Evidence 和审批 UI | 成为 Run 事实来源、持久化敏感 Token 到 Zustand |
-| `rn-agent-sdk` | API、SSE、重连、补发和生命周期抽象 | 绑定 Redux 或 Zustand |
+| `rn-agent-sdk` | API、SSE、重连、补发、游标持久化和跨端生命周期抽象 | 绑定 React、React Native、Redux 或 Zustand |
 
 依赖方向必须满足：
 
@@ -170,6 +170,6 @@ JWT 验证
 - 自动恢复当前由 API 启动扫描触发，多副本协调租约和周期 worker 尚未实现。
 - Run、事件和业务产物目前分别提交，尚未形成统一事务/Outbox 协调。
 - 项目、供应商、企业风险、流水和写回工具仍为确定性 Mock；制度检索已接入可切换的内存/Qdrant 实现。
-- 动态规划、Qdrant 适配、Web 工作台、验收规模真实质量评测、元数据工具、MCP、RN SDK 核心和第二 Agent 已实现；RNModules 页面示例、合同专属工作台和真实 PaaS Gateway 尚未实现。
+- 动态规划、Qdrant 适配、Web 工作台、验收规模真实质量评测、元数据工具、MCP、跨端 SDK、生命周期实验台和第二 Agent 已实现；真机系统行为、合同专属业务页面和真实 PaaS Gateway 尚未实现。
 
 任何简历和演示材料必须区分“已实现”与“目标设计”。

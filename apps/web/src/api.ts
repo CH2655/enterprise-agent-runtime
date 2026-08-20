@@ -7,7 +7,7 @@ import type {
   RunStatus,
 } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export async function listRuns(
   identity: DemoIdentity,
@@ -93,7 +93,7 @@ async function request<T>(
   return response.json() as Promise<T>;
 }
 
-function identityHeaders(identity: DemoIdentity): Record<string, string> {
+export function identityHeaders(identity: DemoIdentity): Record<string, string> {
   if (identity.token) return { authorization: `Bearer ${identity.token}` };
   return {
     "x-demo-tenant": identity.tenantId,

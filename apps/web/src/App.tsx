@@ -6,6 +6,7 @@ import {
   FileSearch,
   ListFilter,
   Menu,
+  MonitorSmartphone,
   Plus,
   ShieldCheck,
   X,
@@ -13,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { listRuns } from "./api";
 import { CreateRunDialog } from "./components/CreateRunDialog";
+import { LifecycleLab } from "./components/LifecycleLab";
 import { RunDetail } from "./components/RunDetail";
 import { StatusBadge } from "./components/StatusBadge";
 import { presentRun, type AgentRunSummary, type DemoIdentity, type RunStatus } from "./types";
@@ -32,20 +34,25 @@ export function App() {
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(runIdFromLocation);
   const [createOpen, setCreateOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [screen, setScreen] = useState<"workbench" | "lifecycle">(screenFromLocation);
   const runsQuery = useQuery({
     queryKey: ["runs", identity.tenantId, status ?? "all"],
     queryFn: () => listRuns(identity, status),
   });
 
   useEffect(() => {
-    const onPopState = () => setSelectedRunId(runIdFromLocation());
+    const onPopState = () => {
+      setSelectedRunId(runIdFromLocation());
+      setScreen(screenFromLocation());
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
+    if (screen !== "workbench") return;
     if (!selectedRunId && runsQuery.data?.[0]) selectRun(runsQuery.data[0].id, false);
-  }, [runsQuery.data, selectedRunId]);
+  }, [runsQuery.data, screen, selectedRunId]);
 
   const updateIdentity = (tenantId: string) => {
     const next = {
@@ -60,10 +67,23 @@ export function App() {
   };
 
   const selectRun = (runId: string, push = true) => {
+    setScreen("workbench");
     setSelectedRunId(runId);
     setSidebarOpen(false);
     if (push) window.history.pushState({}, "", `/runs/${runId}`);
     else window.history.replaceState({}, "", `/runs/${runId}`);
+  };
+
+  const openLifecycleLab = () => {
+    setScreen("lifecycle");
+    setSidebarOpen(false);
+    window.history.pushState({}, "", "/lifecycle-lab");
+  };
+
+  const openWorkbench = () => {
+    setScreen("workbench");
+    const path = selectedRunId ? `/runs/${selectedRunId}` : "/";
+    window.history.pushState({}, "", path);
   };
 
   const activeCount = useMemo(
@@ -93,6 +113,10 @@ export function App() {
           <div className="runtime-health" title="Runtime 连接正常">
             <span className="health-dot" /> Runtime Online
           </div>
+          <button className="topbar-view-button" type="button" onClick={screen === "lifecycle" ? openWorkbench : openLifecycleLab}>
+            <MonitorSmartphone size={16} />
+            {screen === "lifecycle" ? "业务工作台" : "恢复实验台"}
+          </button>
           <label className="tenant-select">
             <CircleUserRound size={17} />
             <select
@@ -111,7 +135,7 @@ export function App() {
         </div>
       </header>
 
-      <div className="workspace">
+      {screen === "lifecycle" ? <LifecycleLab identity={identity} /> : <div className="workspace">
         <aside className={`task-sidebar ${sidebarOpen ? "is-open" : ""}`}>
           <div className="sidebar-heading">
             <div>
@@ -167,7 +191,7 @@ export function App() {
             </div>
           )}
         </main>
-      </div>
+      </div>}
 
       <CreateRunDialog
         open={createOpen}
@@ -221,6 +245,10 @@ function TaskListSkeleton() {
 function runIdFromLocation(): string | undefined {
   const match = /^\/runs\/([0-9a-f-]+)$/i.exec(window.location.pathname);
   return match?.[1];
+}
+
+function screenFromLocation(): "workbench" | "lifecycle" {
+  return window.location.pathname === "/lifecycle-lab" ? "lifecycle" : "workbench";
 }
 
 function readIdentity(): DemoIdentity {

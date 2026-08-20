@@ -2,7 +2,7 @@
 
 面向企业 PaaS 的多租户 Agent 执行与治理项目，以“项目风控与供应商准入尽调”为首个标杆业务，目标是让 AI 能够受控读取企业数据、生成可追溯结论、等待人工审批并安全回写业务系统。
 
-> 当前仓库已完成 M1 可靠 Runtime 和 M2 风控业务闭环，并通过三轮 E2 百炼/Qdrant 验收规模评测。M3 已完成 PaaS 元数据工具编译器与 MCP 协议闭环，RN SDK 和第二业务 Agent 仍在实施中。
+> 当前仓库已完成 M1 可靠 Runtime、M2 风控业务闭环和 M3 PaaS 平台复用证明，并通过三轮 E2 百炼/Qdrant 验收规模评测。
 
 ## 产品闭环
 
@@ -28,6 +28,7 @@
 - 官方 MCP TypeScript SDK 适配层：只有显式授权工具可暴露，`tools/call` 仍统一进入 Tool Registry。
 - 脱敏供应商快照与 stdio MCP 示例，读取时掩码银行账号、删除禁止字段，写入时拒绝只读和敏感字段。
 - 框架无关 RN Agent SDK：JWT HTTP、标准 SSE 解析、sequence 补发去重、App 生命周期暂停/恢复和游标持久化。
+- Web 生命周期实验台：复用真实合同 Agent、审批 API 与 SSE，可观测并发创建收敛、后台暂停、游标补发和事件去重。
 - 合同条款合规 Agent：复用同一 Run、元数据工具、Evidence、Finding、审批、事件和幂等写回内核。
 - Evidence 与 Finding 引用校验，Finding 不能引用不存在的 Evidence ID。
 - PostgreSQL 持久化 Run、Event、Approval、Evidence、Finding、Tool Invocation 和 Idempotency；事件 sequence 由数据库事务分配。
@@ -69,7 +70,7 @@
 - 文档解析当前支持 Markdown 章节和行号，不包含 PDF/OCR。
 - Qdrant 适配器有协议级自动化测试；尚未建立真实 Qdrant 容器的持续集成和检索质量基线。
 - PaaS 元数据编译与 MCP 治理路径已经实现，但真实 PaaS 元数据导出接口、权限服务和业务 API Gateway 尚未接入。
-- RN SDK 核心、合同 Agent 和双 Agent 通用工作台展示已实现，但 RNModules 页面适配和合同专属创建表单尚未完成。
+- 跨端 SDK、RN AppState/存储适配契约和 Web 生命周期实验台已实现；尚未完成真机系统杀进程、厂商后台策略及 RNModules 业务页面集成验证。
 - Web 异步启动目前使用进程内调度；API 在返回 `running` 后立刻崩溃时，缺少持久化执行队列自动接管该 Run。
 
 ## 架构原则
@@ -127,14 +128,14 @@ packages/persistence/      Drizzle Schema、PostgreSQL Repository 和审计
 packages/model-provider/   结构化模型契约、离线实现和 OpenAI Provider
 packages/retrieval/        文档分块、Embedding 编排、Outbox Worker 与 Qdrant 适配
 packages/paas-metadata/    PaaS 有效元数据校验与 Tool Schema 编译
-packages/rn-agent-sdk/     JWT、Run、SSE 补发与 RN 生命周期恢复
+packages/rn-agent-sdk/     JWT、Run、SSE 补发与跨端生命周期恢复内核
 mcp-servers/paas-tools/    官方 MCP SDK 协议适配与 stdio 演示
 evals/                     版本化数据集、E0 运行器、指标和评测报告
 __tests__/                 工作流与平台包测试
 docs/                      PRD、架构、ADR、里程碑与验收
 ```
 
-后续 M3 任务将在 RNModules 中增加移动审批示例，并补齐合同专属工作台视图。
+Web 工作台右上角“恢复实验台”可运行跨端生命周期验证；合同专属业务页面和真机验证作为后续集成项保留。
 
 ## 本地运行
 
@@ -263,7 +264,7 @@ curl 'http://127.0.0.1:3001/api/runs/<run-id>/events?after=5' \
 - M0：设计基线与原型审计，已完成。
 - M1：可靠 Runtime 与多租户基础，工程闭环已完成并通过真实 PostgreSQL 验证；产物查询 API 的完整跨租户矩阵作为增强项继续补齐。
 - M2：已完成；业务闭环与 E2 三轮验收规模真实评测已固化。
-- M3：进行中；PaaS 元数据工具、MCP、RN SDK 核心和合同 Agent 已完成，RNModules 示例与合同工作台待实现。
+- M3：已完成；PaaS 元数据工具、MCP、跨端 SDK、Web 生命周期实验台、架构边界测试和合同 Agent 已通过工程验收。
 - M4：评测固化与面试交付。
 
 只有通过对应[验收标准](docs/acceptance-criteria.md)的能力，才能进入简历成果描述。
